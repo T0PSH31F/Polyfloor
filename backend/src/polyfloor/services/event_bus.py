@@ -69,9 +69,11 @@ class EventBus:
                     pass
 
         # Registered handlers
+        import inspect
+
         for handler in self._handlers:
             try:
-                if asyncio.iscoroutinefunction(handler):
+                if inspect.iscoroutinefunction(handler):
                     await handler(event)
                 else:
                     handler(event)
