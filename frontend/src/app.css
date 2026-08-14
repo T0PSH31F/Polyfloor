@@ -1,0 +1,95 @@
+/* Polyfloor — Global styles */
+
+:root {
+  --color-bg: #1a202c;
+  --color-surface: #2d3748;
+  --color-border: #4a5568;
+  --color-text: #e2e8f0;
+  --color-text-muted: #a0aec0;
+  --color-primary: #63b3ed;
+  --color-success: #48bb78;
+  --color-warning: #ed8936;
+  --color-error: #fc8181;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-sans: "Inter", -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Status badges */
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.badge--idle { background: var(--color-border); color: var(--color-text-muted); }
+.badge--working { background: var(--color-success); color: #1a202c; }
+.badge--alert { background: var(--color-warning); color: #1a202c; }
+.badge--done { background: var(--color-primary); color: #1a202c; }
+.badge--pending { background: var(--color-warning); color: #1a202c; }
+.badge--approved { background: var(--color-success); color: #1a202c; }
+.badge--rejected { background: var(--color-error); color: #1a202c; }
+
+/* Task status badges */
+.badge--backlog { background: #4a5568; color: #e2e8f0; }
+.badge--queued { background: #805ad5; color: #fff; }
+.badge--in_progress { background: var(--color-success); color: #1a202c; }
+.badge--staging { background: var(--color-primary); color: #1a202c; }
+
+/* Layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Skip to content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: #1a202c;
+  padding: 0.5rem 1rem;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
