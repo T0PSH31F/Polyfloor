@@ -6,7 +6,7 @@
  * Keeps Phaser implementation isolated and testable without WebGL.
  */
 
-import type { AgentState, FloorEvent } from "./types";
+import type { AgentState, FloorEvent } from "$lib/types";
 
 /** Events emitted from Svelte → Phaser */
 export type SvelteToPhaserEvent =

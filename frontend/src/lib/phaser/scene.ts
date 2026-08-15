@@ -7,7 +7,7 @@
 
 import Phaser from "phaser";
 import { bridge, type SvelteToPhaserEvent } from "./bridge";
-import type { AgentState } from "./types";
+import type { AgentState } from "$lib/types";
 
 const FLOOR_COLORS: Record<AgentState, number> = {
   idle: 0x4a5568,

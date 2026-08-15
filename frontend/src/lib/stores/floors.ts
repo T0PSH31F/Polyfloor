@@ -3,8 +3,8 @@
  */
 
 import { writable, derived } from "svelte/store";
-import type { FloorConfig, Task } from "./types";
-import { getFloors, getTasks } from "./api";
+import type { FloorConfig, Task } from "$lib/types";
+import { getFloors, getTasks } from "$lib/api";
 
 export const floors = writable<FloorConfig[]>([]);
 export const selectedFloorId = writable<string | null>(null);

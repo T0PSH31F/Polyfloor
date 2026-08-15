@@ -2,7 +2,7 @@
 
 ## MCP Server
 
-Polyfloor exposes a standards-aligned MCP server for tool-calling agents.
+Polyfloor exposes a standards-compliant MCP server for tool-calling agents.
 
 ### Available Tools
 
@@ -33,14 +33,42 @@ Add to your OpenCode configuration:
 }
 ```
 
+Or using the polyfloor CLI:
+
+```json
+{
+  "mcpServers": {
+    "polyfloor": {
+      "command": "polyfloor-mcp",
+      "args": [],
+      "env": {
+        "POLYFLOOR_API_TOKEN_FILE": "/path/to/token"
+      }
+    }
+  }
+}
+```
+
 ### Security
 
 - Requires the same token authentication as the REST API
-- Binds to loopback only
+- Binds to loopback only (stdio transport)
 - No raw database access
 - No secret access
 - No arbitrary file access
 - No command execution
+
+### Smoke Test
+
+Verify the MCP server starts and lists tools:
+
+```bash
+# Install with MCP support
+pip install 'polyfloor[mcp]'
+
+# Test tool listing
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | python -m polyfloor.mcp_server
+```
 
 ## REST API
 

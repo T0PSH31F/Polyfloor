@@ -14,12 +14,17 @@ Polyfloor is designed to integrate into `T0PSH31F/NFP` — a flake-parts + clan-
 In `~/Clan/NFP/flake.nix`:
 
 ```nix
-inputs.polyfloor.url = "github:T0PSH31F/polyfloor";
+inputs.polyfloor = {
+  url = "github:T0PSH31F/Polyfloor";
+  inputs.nixpkgs.follows = "nixpkgs";
+  inputs.flake-parts.follows = "flake-parts";
+  inputs.systems.follows = "systems";
+};
 ```
 
 ### 2. Import the Module
 
-Create a new layer file (e.g., `layers/30-services/32-polyfloor/polyfloor.nix`):
+Create a new layer file (e.g., `layers/20-services/22-ai/polyfloor.nix`):
 
 ```nix
 { inputs, ... }: {
@@ -33,25 +38,40 @@ Create a new layer file (e.g., `layers/30-services/32-polyfloor/polyfloor.nix`):
       host = "127.0.0.1";
       port = 8001;
     };
+    # Do NOT set manageDatabase=true — use NFP's shared PostgreSQL
+    database.manageDatabase = false;
+    # Do NOT set persistence.enable — NFP manages impermanence
   };
 }
 ```
 
 ### 3. Configure Secrets via SOPS
 
-Add to your SOPS configuration:
+Add to your SOPS-encrypted secrets file:
 
 ```yaml
-# In secrets/polyfloor.yaml
-POLYFLOOR_DATABASE_DSN: "postgresql://polyfloor:<password>@localhost:5432/polyfloor"
-POLYFLOOR_API_TOKEN: "<secure-token>"
-POLYFLOOR_EXTREMEROUTER_API_KEY: "<api-key>"
+# In secrets/external_services.yaml
+polyfloor_api_token: <secure-token>
+```
+
+Create a SOPS template in your NFP config:
+
+```nix
+sops.templates."polyfloor-env" = {
+  content = ''
+    POLYFLOOR_DATABASE_DSN=postgresql://polyfloor:${config.sops.placeholder.postgres-password}@localhost:5432/polyfloor
+    POLYFLOOR_API_TOKEN=${config.sops.placeholder.polyfloor_api_token}
+  '';
+  owner = "polyfloor";
+  group = "polyfloor";
+  mode = "0400";
+};
 ```
 
 Wire to the service:
 
 ```nix
-tower.backend.environmentFile = config.sops.secrets.polyfloor-env.path;
+tower.backend.environmentFile = config.sops.templates."polyfloor-env".path;
 ```
 
 ### 4. Use Existing PostgreSQL
@@ -69,6 +89,7 @@ Run migrations:
 
 ```bash
 psql -U polyfloor -d polyfloor -f db/migrations/001_tower_core.sql
+psql -U polyfloor -d polyfloor -f db/migrations/002_digital_production_studio.sql
 ```
 
 ### 5. Configure Persistence
@@ -81,7 +102,7 @@ environment.persistence."/persist".directories = [
 ];
 ```
 
-Do NOT rely on unconditional module declarations — the parent NFP config controls impermanence.
+Do NOT set `tower.persistence.enable = true` — NFP controls impermanence through its own layer.
 
 ### 6. Reverse Proxy
 

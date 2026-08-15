@@ -2,7 +2,7 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [sveltekit()],
+  plugins: [sveltekit()] as any,
   server: {
     proxy: {
       "/api": {
@@ -14,4 +14,4 @@ export default defineConfig({
   test: {
     include: ["src/**/*.{test,spec}.{js,ts}"],
   },
-});
+} as any);

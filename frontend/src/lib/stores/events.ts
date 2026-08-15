@@ -3,7 +3,7 @@
  */
 
 import { writable, derived, get } from "svelte/store";
-import type { FloorEvent, AgentState } from "./types";
+import type { FloorEvent, AgentState } from "$lib/types";
 
 const MAX_EVENTS = 500;
 
