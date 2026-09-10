@@ -8,13 +8,13 @@ If no token file is configured, the API runs in development mode with full acces
 
 ## Authorization Roles
 
-| Role | Scopes |
-|------|--------|
-| `human_admin` | All scopes |
-| `hr` | floors:write, roles:write, tasks:write, approvals:resolve, config:write |
-| `orchestrator` | tasks:write, approvals:create, sprints:write |
-| `worker` | tasks:read, events:read |
-| `readonly` | Read-only access |
+| Role           | Scopes                                                                  |
+| -------------- | ----------------------------------------------------------------------- |
+| `human_admin`  | All scopes                                                              |
+| `hr`           | floors:write, roles:write, tasks:write, approvals:resolve, config:write |
+| `orchestrator` | tasks:write, approvals:create, sprints:write                            |
+| `worker`       | tasks:read, events:read                                                 |
+| `readonly`     | Read-only access                                                        |
 
 ## Floor Scoping
 
@@ -23,6 +23,7 @@ Principals can be scoped to specific floors. A scoped principal cannot access ot
 ## Output Path Security
 
 The output service prevents:
+
 - Path traversal (`..`)
 - Absolute paths
 - Symlink escapes
@@ -32,6 +33,7 @@ The output service prevents:
 ## Approval Gate
 
 All external side effects require human approval:
+
 - Publishing content
 - Sending emails
 - Financial transactions

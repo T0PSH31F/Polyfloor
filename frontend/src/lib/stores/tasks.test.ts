@@ -87,9 +87,7 @@ describe("task board grouping", () => {
       "rejected",
     ];
 
-    const tasks = statuses.map((status, i) =>
-      makeTask({ id: i + 1, status })
-    );
+    const tasks = statuses.map((status, i) => makeTask({ id: i + 1, status }));
 
     const grouped = groupByStatus(tasks);
 

@@ -21,6 +21,7 @@ nixos-rebuild build --flake .#z0r0
 ```
 
 If this fails, report the exact error. Common issues:
+
 - Missing `polyfloor_api_token` in SOPS secrets → run `sops layers/00-cyberia/03-treasure/secrets/external_services.yaml` and add it
 - PostgreSQL not running → `systemctl start postgresql`
 
@@ -38,6 +39,7 @@ journalctl -u polyfloor-backend -n 50 --no-pager
 ```
 
 The service should be `active (running)`. If it fails, check logs for:
+
 - Missing environment file → SOPS template not rendering
 - Port conflict → change `ai-services.polyfloor.port` in z0r0 config
 - PostgreSQL connection → ensure DB exists (step 4)
@@ -113,6 +115,7 @@ curl -s -X POST http://127.0.0.1:8001/api/v1/tasks \
 ### 8. Report results
 
 Report back:
+
 - Did `nixos-rebuild build` succeed?
 - Did `nixos-rebuild switch` succeed?
 - Is `polyfloor-backend.service` active?
@@ -125,17 +128,20 @@ Report back:
 ## Troubleshooting
 
 ### Service won't start
+
 ```bash
 journalctl -u polyfloor-backend -n 100 --no-pager
 ```
 
 ### Database connection refused
+
 ```bash
 systemctl status postgresql
 sudo -u postgres psql -c "SELECT 1"
 ```
 
 ### SOPS decryption fails
+
 ```bash
 cd ~/Clan/NFP
 SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops --decrypt layers/00-cyberia/03-treasure/secrets/external_services.yaml | head -5
@@ -144,6 +150,7 @@ SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops --decrypt layers/00-cyberia/0
 If this fails, check that the age key exists at `~/.config/sops/age/keys.txt`.
 
 ### Port conflict
+
 ```bash
 ss -tlnp | grep 8001
 ```

@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from sse_starlette.sse import EventSourceResponse
 
 from ..auth import Principal, require_floor_access, require_scope
-from ..db import get_pool
 
 router = APIRouter(tags=["events"])
 
@@ -33,10 +33,8 @@ class EventBus:
 
     async def publish(self, floor_id: str, event: dict[str, Any]):
         for q in self._subscribers.get(floor_id, []):
-            try:
+            with contextlib.suppress(asyncio.QueueFull):
                 q.put_nowait(event)
-            except asyncio.QueueFull:
-                pass  # Drop oldest would require different impl
 
     async def publish_global(self, event: dict[str, Any]):
         for floor_id in list(self._subscribers.keys()):
@@ -49,7 +47,7 @@ event_bus = EventBus()
 
 @router.get("/events/stream")
 async def stream_events(
-    floor_id: Optional[str] = Query(None, description="Filter events by floor ID"),
+    floor_id: str | None = Query(None, description="Filter events by floor ID"),
     principal: Principal = Depends(require_scope("events:read")),
 ):
     """SSE endpoint for real-time event streaming."""
@@ -67,7 +65,7 @@ async def stream_events(
                         "data": json.dumps(event),
                         "id": str(event.get("id", "")),
                     }
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield {"event": "heartbeat", "data": "{}"}
                 except asyncio.CancelledError:
                     break

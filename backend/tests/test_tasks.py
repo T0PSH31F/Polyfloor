@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from polyfloor.graph import TaskState, TaskStatus, WorkflowGraph, TRANSITIONS
+from polyfloor.graph import TaskState, TaskStatus, WorkflowGraph
 
 
 def test_valid_transitions():
@@ -62,7 +62,9 @@ def test_workflow_graph_approval_gate():
 
     from polyfloor.graph import ApprovalGate
 
-    gate = ApprovalGate(approval_id=1, task_id=1, approval_type="publish", description="Publish blog")
+    gate = ApprovalGate(
+        approval_id=1, task_id=1, approval_type="publish", description="Publish blog"
+    )
     graph.add_approval_gate(1, gate)
 
     assert not graph.can_proceed(1)

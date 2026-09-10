@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 import asyncpg
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
@@ -11,26 +11,24 @@ from sqlmodel import SQLModel
 
 from .models import ApiAuditLog, ApiToken, Approval, FloorEvent, Task  # noqa: F401
 
-_pool: Optional[asyncpg.Pool] = None
-_engine: Optional[AsyncEngine] = None
-_session_factory: Optional[sessionmaker] = None
+_pool: asyncpg.Pool | None = None
+_engine: AsyncEngine | None = None
+_session_factory: sessionmaker | None = None
 
 DEFAULT_SQLITE_URL = "sqlite+aiosqlite:///polyfloor.db"
 
 
-def get_engine(db_url: Optional[str] = None) -> AsyncEngine:
+def get_engine(db_url: str | None = None) -> AsyncEngine:
     """Get or create the SQLAlchemy/SQLModel async engine."""
     global _engine, _session_factory
     if _engine is None:
         url = db_url or DEFAULT_SQLITE_URL
         _engine = create_async_engine(url, echo=False, future=True)
-        _session_factory = sessionmaker(
-            _engine, class_=AsyncSession, expire_on_commit=False
-        )
+        _session_factory = sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
     return _engine
 
 
-async def init_db(db_url: Optional[str] = None) -> None:
+async def init_db(db_url: str | None = None) -> None:
     """Initialize SQLModel database tables."""
     engine = get_engine(db_url)
     async with engine.begin() as conn:

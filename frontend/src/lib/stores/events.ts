@@ -26,39 +26,42 @@ export const filteredEvents = derived(
 );
 
 /** Agent states derived from events */
-export const agentStates = derived(events, ($events): Record<string, AgentState> => {
-  const states: Record<string, AgentState> = {};
+export const agentStates = derived(
+  events,
+  ($events): Record<string, AgentState> => {
+    const states: Record<string, AgentState> = {};
 
-  // Walk events newest-first to get latest state per floor
-  for (const event of $events) {
-    const key = `${event.floor_id}:${event.actor}`;
-    if (states[key]) continue;
+    // Walk events newest-first to get latest state per floor
+    for (const event of $events) {
+      const key = `${event.floor_id}:${event.actor}`;
+      if (states[key]) continue;
 
-    switch (event.event_type) {
-      case "task.created":
-      case "task.updated":
-        if (event.payload?.status === "in_progress") {
-          states[key] = "working";
-        } else if (event.payload?.status === "done") {
-          states[key] = "done";
-        } else {
+      switch (event.event_type) {
+        case "task.created":
+        case "task.updated":
+          if (event.payload?.status === "in_progress") {
+            states[key] = "working";
+          } else if (event.payload?.status === "done") {
+            states[key] = "done";
+          } else {
+            states[key] = "idle";
+          }
+          break;
+        case "approval.resolved":
+          states[key] = event.payload?.status === "approved" ? "done" : "alert";
+          break;
+        case "config.updated":
+        case "role.updated":
+          states[key] = "alert";
+          break;
+        default:
           states[key] = "idle";
-        }
-        break;
-      case "approval.resolved":
-        states[key] = event.payload?.status === "approved" ? "done" : "alert";
-        break;
-      case "config.updated":
-      case "role.updated":
-        states[key] = "alert";
-        break;
-      default:
-        states[key] = "idle";
+      }
     }
-  }
 
-  return states;
-});
+    return states;
+  },
+);
 
 let eventSource: EventSource | null = null;
 

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 
@@ -23,10 +22,10 @@ class ModelEndpoint:
 
     base_url: str
     model: str
-    api_key: Optional[str] = None
+    api_key: str | None = None
     is_paid: bool = False
-    fallback_url: Optional[str] = None
-    fallback_api_key: Optional[str] = None
+    fallback_url: str | None = None
+    fallback_api_key: str | None = None
 
 
 class ModelRouter:
@@ -37,9 +36,9 @@ class ModelRouter:
     def __init__(
         self,
         kong_url: str = "http://127.0.0.1:8000/v1",
-        kong_api_key: Optional[str] = None,
+        kong_api_key: str | None = None,
         extreme_router_url: str = "https://router.extreme.ai/v1",
-        extreme_router_api_key: Optional[str] = None,
+        extreme_router_api_key: str | None = None,
         hermes_url: str = "http://127.0.0.1:11434/v1",
         hermes_model: str = "hermes",
         reasoning_alias: str = "best-reasoning",
@@ -151,7 +150,7 @@ class ModelRouter:
                 payload=payload,
             )
 
-    async def _send_request(self, base_url: str, api_key: Optional[str], payload: dict) -> dict:
+    async def _send_request(self, base_url: str, api_key: str | None, payload: dict) -> dict:
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"

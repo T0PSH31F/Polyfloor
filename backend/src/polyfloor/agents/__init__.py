@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -35,7 +35,7 @@ class ExecutionResult:
     success: bool
     output: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class AgentExecutor(ABC):
@@ -131,7 +131,7 @@ class OpenCodeExecutor(AgentExecutor):
     working directory. Does NOT allow arbitrary shell execution.
     """
 
-    def __init__(self, allowed_dirs: Optional[list[str]] = None):
+    def __init__(self, allowed_dirs: list[str] | None = None):
         self.allowed_dirs = allowed_dirs or []
 
     def is_available(self) -> bool:

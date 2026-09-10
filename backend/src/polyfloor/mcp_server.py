@@ -17,8 +17,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-from typing import Any, Optional
 
 import httpx
 
@@ -31,7 +29,7 @@ def _get_api_base() -> str:
     return f"http://{settings.host}:{settings.port}"
 
 
-def _get_api_token() -> Optional[str]:
+def _get_api_token() -> str | None:
     """Get the API token from settings."""
     settings = get_settings()
     return settings.security.get_api_token()
@@ -60,7 +58,7 @@ async def run_mcp_server():
     try:
         from mcp.server import Server
         from mcp.server.stdio import stdio_server
-        from mcp.types import Tool, TextContent
+        from mcp.types import TextContent, Tool
     except ImportError:
         print("MCP server requires the 'mcp' package. Install with: pip install 'polyfloor[mcp]'")
         return
@@ -78,9 +76,17 @@ async def run_mcp_server():
                     "properties": {
                         "floor_id": {"type": "string", "description": "Target floor ID"},
                         "title": {"type": "string", "description": "Task title"},
-                        "description": {"type": "string", "description": "Task description", "default": ""},
+                        "description": {
+                            "type": "string",
+                            "description": "Task description",
+                            "default": "",
+                        },
                         "assigned_role": {"type": "string", "description": "Role to assign"},
-                        "priority": {"type": "integer", "description": "Task priority (0=normal)", "default": 0},
+                        "priority": {
+                            "type": "integer",
+                            "description": "Task priority (0=normal)",
+                            "default": 0,
+                        },
                     },
                     "required": ["floor_id", "title"],
                 },
@@ -124,9 +130,16 @@ async def run_mcp_server():
                     "type": "object",
                     "properties": {
                         "floor_id": {"type": "string", "description": "Floor ID"},
-                        "approval_type": {"type": "string", "description": "Type of approval needed"},
+                        "approval_type": {
+                            "type": "string",
+                            "description": "Type of approval needed",
+                        },
                         "description": {"type": "string", "description": "What needs approval"},
-                        "payload": {"type": "object", "description": "Approval payload", "default": {}},
+                        "payload": {
+                            "type": "object",
+                            "description": "Approval payload",
+                            "default": {},
+                        },
                     },
                     "required": ["floor_id", "approval_type", "description"],
                 },
@@ -148,13 +161,17 @@ async def run_mcp_server():
     async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         try:
             if name == "create_task":
-                result = await _api_request("POST", "/api/v1/tasks", json={
-                    "floor_id": arguments["floor_id"],
-                    "title": arguments["title"],
-                    "description": arguments.get("description", ""),
-                    "assigned_role": arguments.get("assigned_role"),
-                    "priority": arguments.get("priority", 0),
-                })
+                result = await _api_request(
+                    "POST",
+                    "/api/v1/tasks",
+                    json={
+                        "floor_id": arguments["floor_id"],
+                        "title": arguments["title"],
+                        "description": arguments.get("description", ""),
+                        "assigned_role": arguments.get("assigned_role"),
+                        "priority": arguments.get("priority", 0),
+                    },
+                )
             elif name == "list_tasks":
                 params = {}
                 if "floor_id" in arguments:
@@ -173,24 +190,30 @@ async def run_mcp_server():
                 params["status"] = "pending"
                 result = await _api_request("GET", "/api/v1/approvals", params=params)
             elif name == "request_approval":
-                result = await _api_request("POST", "/api/v1/approvals", json={
-                    "floor_id": arguments["floor_id"],
-                    "approval_type": arguments["approval_type"],
-                    "description": arguments["description"],
-                    "payload": arguments.get("payload", {}),
-                    "requested_by": "mcp-client",
-                })
-            elif name == "floor_status":
                 result = await _api_request(
-                    "GET", f"/api/v1/floors/{arguments['floor_id']}"
+                    "POST",
+                    "/api/v1/approvals",
+                    json={
+                        "floor_id": arguments["floor_id"],
+                        "approval_type": arguments["approval_type"],
+                        "description": arguments["description"],
+                        "payload": arguments.get("payload", {}),
+                        "requested_by": "mcp-client",
+                    },
                 )
+            elif name == "floor_status":
+                result = await _api_request("GET", f"/api/v1/floors/{arguments['floor_id']}")
             else:
                 result = {"error": f"Unknown tool: {name}"}
 
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         except httpx.HTTPStatusError as e:
-            return [TextContent(type="text", text=f"API error: {e.response.status_code} - {e.response.text}")]
+            return [
+                TextContent(
+                    type="text", text=f"API error: {e.response.status_code} - {e.response.text}"
+                )
+            ]
         except Exception as e:
             return [TextContent(type="text", text=f"Error: {str(e)}")]
 

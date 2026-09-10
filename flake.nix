@@ -2,11 +2,19 @@
   description = "Polyfloor — Multi-floor AI company OS. Autonomous agent teams as isolated NixOS-native departments.";
 
   inputs = {
-    nixpkgs.url     = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     clan-core = {
       url = "git+https://git.clan.lol/clan/clan-core";
-      inputs.nixpkgs.follows    = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-parts.follows = "flake-parts";
     };
     sops-nix = {
@@ -16,9 +24,11 @@
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs@{ flake-parts, clan-core, ... }:
+  outputs = inputs@{ flake-parts, clan-core, treefmt-nix, git-hooks-nix, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
+        treefmt-nix.flakeModule
+        git-hooks-nix.flakeModule
         clan-core.flakeModules.default
         ./modules/flake-module.nix
       ];
@@ -33,18 +43,64 @@
         };
       };
 
-      perSystem = { pkgs, ... }: {
-        formatter = pkgs.nixfmt-tree;
+      perSystem = { config, pkgs, system, self', ... }: {
+        treefmt = {
+          projectRootFile = "flake.nix";
+          programs.nixpkgs-fmt.enable = true;
+          programs.deadnix.enable = true;
+          programs.statix.enable = true;
+          programs.prettier.enable = true;
+          programs.ruff-format.enable = true;
+          programs.ruff-check.enable = true;
+          programs.mdformat.enable = true;
+        };
+
+        pre-commit = {
+          check.enable = true;
+          settings.hooks.treefmt.enable = true;
+        };
+
+        packages = {
+          backend = pkgs.callPackage ./pkgs/backend.nix { };
+          frontend = pkgs.callPackage ./pkgs/frontend.nix { };
+          default = pkgs.callPackage ./pkgs/default.nix {
+            polyfloor-backend = self'.packages.backend;
+            polyfloor-frontend = self'.packages.frontend;
+          };
+        };
+
         devShells.default = pkgs.mkShell {
+          inputsFrom = [ config.pre-commit.devShell ];
           packages = with pkgs; [
-            clan-core.packages.${pkgs.system}.clan-cli
-            sops age postgresql python312 uv just
+            nodejs_22
+            pnpm
+            python312
+            python312Packages.fastapi
+            python312Packages.uvicorn
+            python312Packages.pytest
+            python312Packages.ruff
+            python312Packages.mypy
+            just
+            sqlite
+            curl
+            jq
+            sops
+            age
+            clan-core.packages.${system}.clan-cli
           ];
           shellHook = ''
+            ${config.pre-commit.installationScript}
             echo "🏢 Polyfloor dev shell"
+            echo "  just dev     — run local dev servers"
             echo "  just check   — run all tests and lints"
-            echo "  just db-migrate — apply DB migrations"
+            echo "  just fmt     — format code"
           '';
+        };
+
+        checks = {
+          backend = self'.packages.backend;
+          frontend = self'.packages.frontend;
+          default = self'.packages.default;
         };
       };
     };

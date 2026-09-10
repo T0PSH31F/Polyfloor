@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 
 class FloorDefinition(BaseModel):
@@ -13,13 +13,13 @@ class FloorDefinition(BaseModel):
 
     id: str = Field(..., min_length=1)
     display_name: str = Field(..., min_length=1)
-    email: Optional[str] = None
+    email: str | None = None
     org_name: str = Field(default="cyberia")
     timezone: str = Field(default="UTC")
-    target_machine: Optional[str] = None
+    target_machine: str | None = None
     db_schema: str = Field(..., min_length=1)
     mcps: list[str] = Field(default_factory=list)
-    template: Optional[str] = None
+    template: str | None = None
     paid_models_allowed: bool = Field(default=False)
     daily_budget_usd: float = Field(default=0.0, ge=0.0)
     persist_paths: list[str] = Field(default_factory=list)

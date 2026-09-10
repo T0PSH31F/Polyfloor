@@ -9,31 +9,32 @@ backlog → queued → in_progress → staging → done
 
 ### Status Descriptions
 
-| Status | Meaning |
-|--------|---------|
-| `backlog` | Not yet prioritized |
-| `queued` | Ready for work, assigned to a role |
-| `in_progress` | Actively being worked on |
-| `staging` | Complete, awaiting review/approval |
-| `done` | Approved and delivered |
-| `rejected` | Failed review, needs rework |
+| Status        | Meaning                            |
+| ------------- | ---------------------------------- |
+| `backlog`     | Not yet prioritized                |
+| `queued`      | Ready for work, assigned to a role |
+| `in_progress` | Actively being worked on           |
+| `staging`     | Complete, awaiting review/approval |
+| `done`        | Approved and delivered             |
+| `rejected`    | Failed review, needs rework        |
 
 ### Valid Transitions
 
-| From | To |
-|------|----|
-| backlog | queued |
-| queued | in_progress, backlog |
-| in_progress | staging, rejected, queued |
-| staging | done, rejected, in_progress |
-| rejected | backlog, queued |
-| done | backlog |
+| From        | To                          |
+| ----------- | --------------------------- |
+| backlog     | queued                      |
+| queued      | in_progress, backlog        |
+| in_progress | staging, rejected, queued   |
+| staging     | done, rejected, in_progress |
+| rejected    | backlog, queued             |
+| done        | backlog                     |
 
 Transitions are validated server-side in both the API and database triggers.
 
 ## Approval Gates
 
 Tasks in `staging` may require approval before moving to `done`:
+
 - External publishing
 - Financial transactions
 - Configuration changes

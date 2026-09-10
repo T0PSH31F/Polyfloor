@@ -52,19 +52,52 @@ button {
   text-transform: uppercase;
 }
 
-.badge--idle { background: var(--color-border); color: var(--color-text-muted); }
-.badge--working { background: var(--color-success); color: #1a202c; }
-.badge--alert { background: var(--color-warning); color: #1a202c; }
-.badge--done { background: var(--color-primary); color: #1a202c; }
-.badge--pending { background: var(--color-warning); color: #1a202c; }
-.badge--approved { background: var(--color-success); color: #1a202c; }
-.badge--rejected { background: var(--color-error); color: #1a202c; }
+.badge--idle {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+.badge--working {
+  background: var(--color-success);
+  color: #1a202c;
+}
+.badge--alert {
+  background: var(--color-warning);
+  color: #1a202c;
+}
+.badge--done {
+  background: var(--color-primary);
+  color: #1a202c;
+}
+.badge--pending {
+  background: var(--color-warning);
+  color: #1a202c;
+}
+.badge--approved {
+  background: var(--color-success);
+  color: #1a202c;
+}
+.badge--rejected {
+  background: var(--color-error);
+  color: #1a202c;
+}
 
 /* Task status badges */
-.badge--backlog { background: #4a5568; color: #e2e8f0; }
-.badge--queued { background: #805ad5; color: #fff; }
-.badge--in_progress { background: var(--color-success); color: #1a202c; }
-.badge--staging { background: var(--color-primary); color: #1a202c; }
+.badge--backlog {
+  background: #4a5568;
+  color: #e2e8f0;
+}
+.badge--queued {
+  background: #805ad5;
+  color: #fff;
+}
+.badge--in_progress {
+  background: var(--color-success);
+  color: #1a202c;
+}
+.badge--staging {
+  background: var(--color-primary);
+  color: #1a202c;
+}
 
 /* Layout */
 .container {

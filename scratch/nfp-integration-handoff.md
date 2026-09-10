@@ -143,6 +143,7 @@ curl http://127.0.0.1:8001/healthz
 ## Files to Import
 
 From the Polyfloor flake:
+
 - `nixosModules.polyfloor` — main tower module
 - `nixosModules.floor-base` — floor base options
 - `clan.modules.*` — clan integration (optional)

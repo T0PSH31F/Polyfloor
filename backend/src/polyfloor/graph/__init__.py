@@ -6,11 +6,11 @@ Implements the task lifecycle as a state machine with approval pause/resume.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import Any
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     BACKLOG = "backlog"
     QUEUED = "queued"
     IN_PROGRESS = "in_progress"
@@ -37,14 +37,14 @@ class TaskState:
     task_id: int
     floor_id: str
     status: TaskStatus
-    assigned_role: Optional[str] = None
+    assigned_role: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def can_transition_to(self, target: TaskStatus) -> bool:
         """Check if a transition to the target status is valid."""
         return target in TRANSITIONS.get(self.status, set())
 
-    def transition_to(self, target: TaskStatus) -> "TaskState":
+    def transition_to(self, target: TaskStatus) -> TaskState:
         """Return a new TaskState with the transitioned status.
 
         Raises ValueError if the transition is invalid.
@@ -104,7 +104,9 @@ class WorkflowGraph:
         """Check if a task can proceed (no pending approval gates)."""
         return len(self.get_pending_gates(task_id)) == 0
 
-    def resolve_gate(self, task_id: int, approval_id: int, approved: bool, resolved_by: str) -> bool:
+    def resolve_gate(
+        self, task_id: int, approval_id: int, approved: bool, resolved_by: str
+    ) -> bool:
         """Resolve an approval gate. Returns True if found and resolved."""
         for gate in self._approval_gates.get(task_id, []):
             if gate.approval_id == approval_id and not gate.is_resolved:
@@ -117,7 +119,7 @@ class WorkflowGraph:
         state: TaskState,
         target: TaskStatus,
         require_approval: bool = False,
-    ) -> tuple[TaskState, Optional[str]]:
+    ) -> tuple[TaskState, str | None]:
         """Attempt a state transition.
 
         Returns:

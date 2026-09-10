@@ -29,12 +29,14 @@ inputs.polyfloor.url = "github:T0PSH31F/polyfloor";
 Polyfloor uses an existing PostgreSQL instance. It does not manage PostgreSQL itself.
 
 1. Create the database and user:
+
 ```sql
 CREATE USER polyfloor WITH PASSWORD '<secure-password>';
 CREATE DATABASE polyfloor OWNER polyfloor;
 ```
 
 2. Run migrations:
+
 ```bash
 psql -U polyfloor -d polyfloor -f db/migrations/001_tower_core.sql
 ```
@@ -48,6 +50,7 @@ tower.backend.environmentFile = config.sops.secrets.polyfloor-env.path;
 ```
 
 Example `.env` file (encrypted with SOPS):
+
 ```
 POLYFLOOR_DATABASE_DSN=postgresql://polyfloor:<password>@localhost:5432/polyfloor
 POLYFLOOR_API_TOKEN=<secure-token>

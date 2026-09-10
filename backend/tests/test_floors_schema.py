@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+
 import pytest
 from pydantic import ValidationError
 
-from polyfloor.floors import FloorDefinition, validate_floor_dict, validate_floors_directory
+from polyfloor.floors import validate_floor_dict, validate_floors_directory
 
 
 def test_valid_floor_definition():

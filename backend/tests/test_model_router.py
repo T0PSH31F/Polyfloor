@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from polyfloor.services.model_router import ModelRouter, ModelEndpoint
+from polyfloor.services.model_router import ModelRouter
 
 
 @pytest.fixture

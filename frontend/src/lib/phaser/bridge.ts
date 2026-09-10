@@ -12,7 +12,12 @@ import type { AgentState, FloorEvent } from "$lib/types";
 export type SvelteToPhaserEvent =
   | { type: "navigate-floor"; floorId: string }
   | { type: "highlight-floor"; floorId: string | null }
-  | { type: "agent-state-change"; floorId: string; role: string; state: AgentState };
+  | {
+      type: "agent-state-change";
+      floorId: string;
+      role: string;
+      state: AgentState;
+    };
 
 /** Events emitted from Phaser → Svelte */
 export type PhaserToSvelteEvent =

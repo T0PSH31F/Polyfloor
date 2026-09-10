@@ -3,7 +3,13 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { get } from "svelte/store";
-import { events, filteredEvents, activeFloorId, clearEvents, agentStates } from "./events";
+import {
+  events,
+  filteredEvents,
+  activeFloorId,
+  clearEvents,
+  agentStates,
+} from "./events";
 import type { FloorEvent } from "$lib/types";
 
 function makeEvent(overrides: Partial<FloorEvent> = {}): FloorEvent {
@@ -37,7 +43,7 @@ describe("event store", () => {
 
   it("respects MAX capacity", () => {
     const many = Array.from({ length: 600 }, (_, i) =>
-      makeEvent({ actor: `agent-${i}` })
+      makeEvent({ actor: `agent-${i}` }),
     );
     events.set(many.slice(0, 500));
     expect(get(events).length).toBeLessThanOrEqual(500);

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import tempfile
-
 import pytest
 
-from polyfloor.services.output_service import OutputService, OutputError, FLOOR_ID_RE
+from polyfloor.services.output_service import FLOOR_ID_RE, OutputError, OutputService
 
 
 @pytest.fixture

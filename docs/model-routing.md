@@ -7,16 +7,16 @@ Free-first: use the best free models available through ExtremeRouter by default.
 ## Routing Priority
 
 1. **Local Hermes/Ollama** — `hermes:<model>` for local execution
-2. **ExtremeRouter free models** — `free://best-reasoning`, `free://best-fast` (default)
-3. **Paid models** — `paid://gpt-4o` (requires `POLYFLOOR_ALLOW_PAID_MODELS=true` AND floor `paid_models_allowed=true`)
+1. **ExtremeRouter free models** — `free://best-reasoning`, `free://best-fast` (default)
+1. **Paid models** — `paid://gpt-4o` (requires `POLYFLOOR_ALLOW_PAID_MODELS=true` AND floor `paid_models_allowed=true`)
 
 ## Logical Aliases
 
-| Alias | Purpose | Default Resolution |
-|-------|---------|-------------------|
+| Alias                   | Purpose                    | Default Resolution                                         |
+| ----------------------- | -------------------------- | ---------------------------------------------------------- |
 | `free://best-reasoning` | Complex analysis, planning | Configurable via `POLYFLOOR_EXTREMEROUTER_REASONING_MODEL` |
-| `free://best-fast` | Quick tasks, responses | Configurable via `POLYFLOOR_EXTREMEROUTER_FAST_MODEL` |
-| `free://best-code` | Code generation | Configurable via `POLYFLOOR_EXTREMEROUTER_CODE_MODEL` |
+| `free://best-fast`      | Quick tasks, responses     | Configurable via `POLYFLOOR_EXTREMEROUTER_FAST_MODEL`      |
+| `free://best-code`      | Code generation            | Configurable via `POLYFLOOR_EXTREMEROUTER_CODE_MODEL`      |
 
 Aliases are configurable — they map to model IDs via environment variables.
 
@@ -41,6 +41,7 @@ POLYFLOOR_PAID_DAILY_BUDGET_USD=0
 ## Per-Floor Configuration
 
 Each floor can configure:
+
 - Default model per role
 - Whether paid models are allowed
 - Daily budget cap

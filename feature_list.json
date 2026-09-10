@@ -1,0 +1,94 @@
+{
+  "project": "Polyfloor",
+  "version": "0.1.0",
+  "features": [
+    {
+      "id": "INFRA-01",
+      "category": "nix",
+      "title": "Hermetic flake-parts setup with devShell and treefmt",
+      "description": "flake.nix evaluates cleanly, exposes devShells, treefmt checks, and NixOS module",
+      "acceptance_criteria": [
+        "nix flake check passes",
+        "nix fmt works"
+      ],
+      "passes": true
+    },
+    {
+      "id": "ASSET-01",
+      "category": "assets",
+      "title": "16x16 orthogonal pixel art tileset and character sprites",
+      "description": "Staged 16x16 master sheets and character spritesheets in frontend/static/assets/",
+      "acceptance_criteria": [
+        "interiors.png present",
+        "characters directory contains role sprites"
+      ],
+      "passes": true
+    },
+    {
+      "id": "UI-01",
+      "category": "frontend",
+      "title": "Dual-screen layout shell",
+      "description": "SvelteKit layout rendering Top Screen (320x240 canvas) and Bottom Screen (Poketch console)",
+      "acceptance_criteria": [
+        "renders at 60fps",
+        "nearest-neighbor pixelated scaling active"
+      ],
+      "passes": false
+    },
+    {
+      "id": "UI-02",
+      "category": "frontend",
+      "title": "1F Reception onboarding wizard",
+      "description": "Interactive multiple-choice questionnaire with 4 grilling intensity tiers",
+      "acceptance_criteria": [
+        "allows naming company",
+        "selects initial team presets"
+      ],
+      "passes": false
+    },
+    {
+      "id": "BUS-01",
+      "category": "backend",
+      "title": "SSE floor state event bus",
+      "description": "FastAPI endpoint streaming agent movements and floor log entries via SSE",
+      "acceptance_criteria": [
+        "GET /api/events yields text/event-stream",
+        "auto-reconnects in Svelte"
+      ],
+      "passes": false
+    },
+    {
+      "id": "FLOOR-01",
+      "category": "backend",
+      "title": "Floor Message Log & Kanban DAG persistence",
+      "description": "SQLite schemas for floor message logs and Lean Kanban task matrices with WIP limits",
+      "acceptance_criteria": [
+        "append-only signed messages",
+        "WIP limit enforcement by COO agent"
+      ],
+      "passes": false
+    },
+    {
+      "id": "HR-01",
+      "category": "agents",
+      "title": "2F Talent operations HR provisioning",
+      "description": "HR Coordinator hires sub-agents, provisions floor desks, and assigns token budgets",
+      "acceptance_criteria": [
+        "desk occupancy updates in state stream",
+        "token budget bounds checked"
+      ],
+      "passes": false
+    },
+    {
+      "id": "NIX-01",
+      "category": "nix",
+      "title": "Hardened NixOS service module",
+      "description": "services.polyfloor NixOS module with DynamicUser and systemd security sandboxing",
+      "acceptance_criteria": [
+        "DynamicUser = true",
+        "nixosModules.default importable in downstream flakes"
+      ],
+      "passes": true
+    }
+  ]
+}

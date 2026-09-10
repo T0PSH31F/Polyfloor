@@ -5,11 +5,9 @@ All secrets are read from file paths, never from env vars directly.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Optional
 
-from pydantic import Field, model_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -43,7 +41,7 @@ class ExtremeRouterSettings(BaseSettings):
         alias="POLYFLOOR_EXTREMEROUTER_BASE_URL",
         description="ExtremeRouter OpenAI-compatible base URL",
     )
-    api_key_file: Optional[str] = Field(
+    api_key_file: str | None = Field(
         default=None,
         alias="POLYFLOOR_EXTREMEROUTER_API_KEY_FILE",
         description="Path to file containing ExtremeRouter API key",
@@ -64,9 +62,9 @@ class ExtremeRouterSettings(BaseSettings):
         description="Logical alias for best code model",
     )
 
-    _api_key: Optional[str] = None
+    _api_key: str | None = None
 
-    def get_api_key(self) -> Optional[str]:
+    def get_api_key(self) -> str | None:
         if self._api_key is None and self.api_key_file:
             self._api_key = _read_secret_file(self.api_key_file)
         return self._api_key
@@ -90,7 +88,7 @@ class HermesSettings(BaseSettings):
 class SecuritySettings(BaseSettings):
     """Authentication and authorization settings."""
 
-    api_token_file: Optional[str] = Field(
+    api_token_file: str | None = Field(
         default=None,
         alias="POLYFLOOR_API_TOKEN_FILE",
         description="Path to file containing the API bearer token",
@@ -101,9 +99,9 @@ class SecuritySettings(BaseSettings):
         description="Comma-separated list of allowed CORS origins",
     )
 
-    _api_token: Optional[str] = None
+    _api_token: str | None = None
 
-    def get_api_token(self) -> Optional[str]:
+    def get_api_token(self) -> str | None:
         if self._api_token is None and self.api_token_file:
             self._api_token = _read_secret_file(self.api_token_file)
         return self._api_token

@@ -40,12 +40,7 @@ export interface Task {
 }
 
 export type TaskStatus =
-  | "backlog"
-  | "queued"
-  | "in_progress"
-  | "staging"
-  | "done"
-  | "rejected";
+  "backlog" | "queued" | "in_progress" | "staging" | "done" | "rejected";
 
 export interface Approval {
   id: number;

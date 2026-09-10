@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import Principal, get_principal, require_floor_access, require_scope
+from ..auth import Principal, require_floor_access, require_scope
 from ..db import get_pool
 
 router = APIRouter(prefix="/floors", tags=["floors"])
@@ -62,9 +62,7 @@ async def list_floors(
     """List all floor configurations."""
     pool = await get_pool()
     async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM tower.floor_configs ORDER BY id"
-        )
+        rows = await conn.fetch("SELECT * FROM tower.floor_configs ORDER BY id")
     return [FloorConfigResponse(**dict(r)) for r in rows]
 
 
@@ -77,9 +75,7 @@ async def get_floor(
     require_floor_access(floor_id, principal)
     pool = await get_pool()
     async with pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT * FROM tower.floor_configs WHERE id = $1", floor_id
-        )
+        row = await conn.fetchrow("SELECT * FROM tower.floor_configs WHERE id = $1", floor_id)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Floor '{floor_id}' not found")
     return FloorConfigResponse(**dict(row))
@@ -131,7 +127,7 @@ async def update_floor_config(
     idx = 1
     for key, val in fields.items():
         if key == "version":
-            set_parts.append(f"version = version + 1")
+            set_parts.append("version = version + 1")
         else:
             set_parts.append(f"{key} = ${idx}")
             values.append(val)
@@ -140,7 +136,7 @@ async def update_floor_config(
     values.append(floor_id)
     query = f"""
         UPDATE tower.floor_configs
-        SET {', '.join(set_parts)}
+        SET {", ".join(set_parts)}
         WHERE id = ${idx}
         RETURNING *
     """
@@ -209,7 +205,7 @@ async def update_role(
     values.extend([floor_id, role_name])
     query = f"""
         UPDATE tower.roles
-        SET {', '.join(set_parts)}
+        SET {", ".join(set_parts)}
         WHERE floor_id = ${idx} AND role_name = ${idx + 1}
         RETURNING role_name, enable, model, max_tokens, description
     """
@@ -218,14 +214,20 @@ async def update_role(
         row = await conn.fetchrow(query, *values)
 
     if row is None:
-        raise HTTPException(status_code=404, detail=f"Role '{role_name}' not found on floor '{floor_id}'")
+        raise HTTPException(
+            status_code=404, detail=f"Role '{role_name}' not found on floor '{floor_id}'"
+        )
 
-    await _emit_event(pool, floor_id, "role.updated", principal.role.value, {"role": role_name, **fields})
+    await _emit_event(
+        pool, floor_id, "role.updated", principal.role.value, {"role": role_name, **fields}
+    )
 
     return RoleResponse(**dict(row))
 
 
-async def _emit_event(pool: asyncpg.Pool, floor_id: str, event_type: str, actor: str, payload: dict):
+async def _emit_event(
+    pool: asyncpg.Pool, floor_id: str, event_type: str, actor: str, payload: dict
+):
     """Insert an audit event."""
     import json
 

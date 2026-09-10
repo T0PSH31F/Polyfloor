@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import Principal, get_principal, require_floor_access, require_scope
+from ..auth import Principal, require_floor_access, require_scope
 from ..db import get_pool
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -26,8 +26,8 @@ class TaskCreate(BaseModel):
     floor_id: str
     title: str
     description: str = ""
-    sprint_id: Optional[int] = None
-    assigned_role: Optional[str] = None
+    sprint_id: int | None = None
+    assigned_role: str | None = None
     priority: int = 0
     metadata: dict[str, Any] = {}
 
@@ -35,11 +35,11 @@ class TaskCreate(BaseModel):
 class TaskResponse(BaseModel):
     id: int
     floor_id: str
-    sprint_id: Optional[int]
+    sprint_id: int | None
     title: str
     description: str
     status: str
-    assigned_role: Optional[str]
+    assigned_role: str | None
     priority: int
     metadata: dict[str, Any]
     created_at: str
@@ -47,16 +47,16 @@ class TaskResponse(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    status: Optional[str] = None
-    assigned_role: Optional[str] = None
-    priority: Optional[int] = None
-    metadata: Optional[dict[str, Any]] = None
+    status: str | None = None
+    assigned_role: str | None = None
+    priority: int | None = None
+    metadata: dict[str, Any] | None = None
 
 
 @router.get("", response_model=list[TaskResponse])
 async def list_tasks(
-    floor_id: Optional[str] = None,
-    status: Optional[str] = None,
+    floor_id: str | None = None,
+    status: str | None = None,
     principal: Principal = Depends(require_scope("tasks:read")),
 ):
     """List tasks, optionally filtered by floor and status."""
@@ -125,7 +125,13 @@ async def create_task(
         )
 
     # Audit
-    await _emit_event(pool, task.floor_id, "task.created", principal.role.value, {"task_id": row["id"], "title": task.title})
+    await _emit_event(
+        pool,
+        task.floor_id,
+        "task.created",
+        principal.role.value,
+        {"task_id": row["id"], "title": task.title},
+    )
 
     return TaskResponse(
         id=row["id"],
@@ -198,7 +204,9 @@ async def update_task(
     async with pool.acquire() as conn:
         row = await conn.fetchrow(query, *params)
 
-    await _emit_event(pool, row["floor_id"], "task.updated", principal.role.value, {"task_id": task_id, **fields})
+    await _emit_event(
+        pool, row["floor_id"], "task.updated", principal.role.value, {"task_id": task_id, **fields}
+    )
 
     return TaskResponse(
         id=row["id"],
@@ -221,5 +229,8 @@ async def _emit_event(pool, floor_id: str, event_type: str, actor: str, payload:
     async with pool.acquire() as conn:
         await conn.execute(
             "INSERT INTO tower.events (floor_id, event_type, actor, payload) VALUES ($1, $2, $3, $4)",
-            floor_id, event_type, actor, json.dumps(payload),
+            floor_id,
+            event_type,
+            actor,
+            json.dumps(payload),
         )

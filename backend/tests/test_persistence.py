@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel, select
 
-from polyfloor.db.models import ApiAuditLog, ApiToken, Approval, FloorEvent, Task
+from polyfloor.db.models import Approval, FloorEvent, Task
 from polyfloor.services.event_bus import event_bus
 
 
@@ -56,7 +57,6 @@ async def test_task_persistence(tmp_path):
 @pytest.mark.asyncio
 async def test_event_bus_db_persistence(test_engine, test_session):
     from unittest.mock import patch
-    from polyfloor.db import get_engine
 
     with patch("polyfloor.services.event_bus.get_engine", return_value=test_engine):
         await event_bus.publish(

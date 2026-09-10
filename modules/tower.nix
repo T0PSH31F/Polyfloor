@@ -5,7 +5,7 @@ let cfg = config.tower; in
   imports = [ ./floor-base.nix ];
 
   options.tower = {
-    enable  = mkEnableOption "Polyfloor Tower";
+    enable = mkEnableOption "Polyfloor Tower";
     dataDir = mkOption {
       type = types.path;
       default = "/var/lib/polyfloor";
@@ -16,7 +16,7 @@ let cfg = config.tower; in
       enable = mkEnableOption "Polyfloor FastAPI backend service" // { default = true; };
       package = mkOption {
         type = types.package;
-        default = pkgs.polyfloor or (pkgs.callPackage ../backend/package.nix {});
+        default = pkgs.polyfloor or (pkgs.callPackage ../backend/package.nix { });
         description = "Packaged Polyfloor backend executable";
       };
       host = mkOption {
@@ -110,7 +110,7 @@ let cfg = config.tower; in
       home = cfg.dataDir;
       description = "Polyfloor service user";
     };
-    users.groups.polyfloor = {};
+    users.groups.polyfloor = { };
 
     # ── PostgreSQL (opt-in) ───────────────────────────────────────────
     services.postgresql = mkIf cfg.database.manageDatabase {

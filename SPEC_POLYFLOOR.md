@@ -1,4 +1,5 @@
 # POLYFLOOR ARCHITECTURAL SPECIFICATION & PRD
+
 **Autonomous Multi-Floor Enterprise Engine with GBA/DS Pixel Art Orchestration**
 
 ---
@@ -7,7 +8,8 @@
 
 Polyfloor models an autonomous business as a multi-floor department store / corporate skyscraper inspired by classic 16-bit handheld games (Pokemon Gen 3 GBA / Gen 4 NDS).
 Users interact with a corporate hierarchy through a retro dual-screen interface:
-- **Top Screen (Canvas Viewport):** 2D orthogonal top-down pixel tilemap ($16\times16$ grid, $320\times240$ base virtual resolution scaled $3\times$ or $4\times$). Shows floors, team suites, furniture, desks, and animated agent sprites.
+
+- **Top Screen (Canvas Viewport):** 2D orthogonal top-down pixel tilemap ($16\\times16$ grid, $320\\times240$ base virtual resolution scaled $3\\times$ or $4\\times$). Shows floors, team suites, furniture, desks, and animated agent sprites.
 - **Bottom Screen (Interactive Console / Pokétch):** Multi-modal telemetry console with high-res character bust portraits (Visual Novel / Fire Emblem style), text dialogue boxes, approval buttons, and real-time activity feeds.
 
 ---
@@ -55,17 +57,20 @@ Users interact with a corporate hierarchy through a retro dual-screen interface:
 ## 3. Communication, State & Governance Mechanics
 
 ### 3.1 Dual-Board Communication Model
+
 Each operational floor maintains two linked data structures stored in SQLite:
+
 1. **The Floor Message Log (Append-Only Bus):**
    - Cryptographically or token-signed JSON entries from agent team leads and HR.
    - Message schema: `(id, floor_id, author_id, author_role, target_role, message_type, payload, timestamp)`.
    - Used for inter-team requests (e.g., Marketing Lead requesting an image generation worker from HR).
-2. **The Floor Kanban Matrix (Lean Task DAG):**
+1. **The Floor Kanban Matrix (Lean Task DAG):**
    - Columns: `BACKLOG`, `TODO`, `IN_PROGRESS`, `REVIEW / AWAITING_APPROVAL`, `DONE`.
    - Tasks contain assigned agent IDs, token spend tracking, and artifact links.
    - **WIP (Work-In-Progress) Limit:** Enforced by the COO agent. No team can have more than 3 concurrent tasks in `IN_PROGRESS`.
 
 ### 3.2 Human-in-the-Loop Approval & Escalation Engine
+
 - **Low Priority:** Dashboard bottom-screen badge notification.
 - **Medium Priority (Telegram):** Budget thresholds reached, marketing releases ready for review, hiring approvals.
 - **Critical Priority (Twilio Call / SMS):** Runaway loop detected, financial threshold breach, security or unauthorized I/O error.
@@ -75,15 +80,17 @@ Each operational floor maintains two linked data structures stored in SQLite:
 ## 4. Frontend & Game Loop Architecture
 
 ### 4.1 Tech Stack
+
 - **Framework:** SvelteKit + TypeScript + Vite
 - **Renderer:** Plain HTML5 2D Canvas (zero external game engine dependencies)
 - **Styling:** CSS Grid + Tailwind with `image-rendering: pixelated`
 - **Transport:** Server-Sent Events (`/api/events`) for unidirectional state streaming + REST POST (`/api/actions`) for user inputs.
 
 ### 4.2 Room & Floor Layout Specifications
-- **Base Canvas Resolution:** $320 \times 240$ pixels, scaled with integer nearest-neighbor sampling.
-- **Tile Size:** $16 \times 16$ pixels.
-- **Floor Boundaries:** Fixed $20 \times 15$ tile grid.
+
+- **Base Canvas Resolution:** $320 \\times 240$ pixels, scaled with integer nearest-neighbor sampling.
+- **Tile Size:** $16 \\times 16$ pixels.
+- **Floor Boundaries:** Fixed $20 \\times 15$ tile grid.
 - **Room Templates:**
   - Executive Suite (carpet, mahogany desks, podium)
   - Research Lab (whiteboards, server consoles, technical desks)
@@ -95,8 +102,8 @@ Each operational floor maintains two linked data structures stored in SQLite:
 
 ## 5. Execution Workflow & Next Steps
 
-1. **Asset Staging:** Place an orthogonal $16\times16$ modern interior tileset at `frontend/static/tileset.png`.
-2. **Backend Event Bus:** Implement the FastAPI SSE streaming route emitting game state deltas.
-3. **Canvas Engine:** Implement the Svelte 2D canvas loop rendering room grids and sprite animations.
-4. **Bottom Console:** Build the Pokétch-style communicator component supporting bust portraits and approval flows.
-5. **1F Intake Engine:** Build the interactive reception desk questionnaire for corporate initialization.
+1. **Asset Staging:** Place an orthogonal $16\\times16$ modern interior tileset at `frontend/static/tileset.png`.
+1. **Backend Event Bus:** Implement the FastAPI SSE streaming route emitting game state deltas.
+1. **Canvas Engine:** Implement the Svelte 2D canvas loop rendering room grids and sprite animations.
+1. **Bottom Console:** Build the Pokétch-style communicator component supporting bust portraits and approval flows.
+1. **1F Intake Engine:** Build the interactive reception desk questionnaire for corporate initialization.

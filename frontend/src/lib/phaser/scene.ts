@@ -34,7 +34,13 @@ export class TowerScene extends Phaser.Scene {
   }
 
   create(): void {
-    const floorIds = ["production", "marketing", "research", "dev", "customer-service"];
+    const floorIds = [
+      "production",
+      "marketing",
+      "research",
+      "dev",
+      "customer-service",
+    ];
     const floorHeight = 80;
     const floorWidth = 300;
     const gap = 10;
@@ -56,17 +62,12 @@ export class TowerScene extends Phaser.Scene {
       rect.setInteractive({ useHandCursor: true });
 
       // Floor label
-      const label = this.add.text(
-        this.scale.width / 2,
-        y,
-        id.toUpperCase(),
-        {
-          fontSize: "14px",
-          fontFamily: "monospace",
-          color: "#ffffff",
-          align: "center",
-        },
-      );
+      const label = this.add.text(this.scale.width / 2, y, id.toUpperCase(), {
+        fontSize: "14px",
+        fontFamily: "monospace",
+        color: "#ffffff",
+        align: "center",
+      });
       label.setOrigin(0.5);
 
       // State indicator (small dot)
@@ -102,7 +103,9 @@ export class TowerScene extends Phaser.Scene {
     }
 
     // Listen for Svelte → Phaser events
-    this.unsubscribe = bridge.onSvelteEvent((event) => this.handleSvelteEvent(event));
+    this.unsubscribe = bridge.onSvelteEvent((event) =>
+      this.handleSvelteEvent(event),
+    );
   }
 
   private handleSvelteEvent(event: SvelteToPhaserEvent): void {
@@ -139,7 +142,11 @@ export class TowerScene extends Phaser.Scene {
     }
   }
 
-  private updateAgentState(floorId: string, _role: string, state: AgentState): void {
+  private updateAgentState(
+    floorId: string,
+    _role: string,
+    state: AgentState,
+  ): void {
     const floor = this.floors.get(floorId);
     if (!floor) return;
 

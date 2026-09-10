@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
 
 import pytest

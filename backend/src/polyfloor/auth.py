@@ -5,9 +5,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Optional, Set
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -21,7 +20,7 @@ from .db.models import ApiAuditLog, ApiToken
 security_scheme = HTTPBearer(auto_error=False)
 
 
-class PrincipalRole(str, Enum):
+class PrincipalRole(StrEnum):
     """Authorization roles for API principals."""
 
     HUMAN_ADMIN = "human_admin"
@@ -31,29 +30,46 @@ class PrincipalRole(str, Enum):
     READONLY = "readonly"
 
 
-ROLE_SCOPES: dict[PrincipalRole, Set[str]] = {
+ROLE_SCOPES: dict[PrincipalRole, set[str]] = {
     PrincipalRole.HUMAN_ADMIN: {
-        "floors:read", "floors:write",
-        "roles:read", "roles:write",
-        "tasks:read", "tasks:write",
-        "approvals:read", "approvals:create", "approvals:resolve",
-        "sprints:read", "sprints:write",
-        "events:read", "config:write",
+        "floors:read",
+        "floors:write",
+        "roles:read",
+        "roles:write",
+        "tasks:read",
+        "tasks:write",
+        "approvals:read",
+        "approvals:create",
+        "approvals:resolve",
+        "sprints:read",
+        "sprints:write",
+        "events:read",
+        "config:write",
     },
     PrincipalRole.HR: {
-        "floors:read", "floors:write",
-        "roles:read", "roles:write",
-        "tasks:read", "tasks:write",
-        "approvals:read", "approvals:create", "approvals:resolve",
-        "sprints:read", "sprints:write",
-        "events:read", "config:write",
+        "floors:read",
+        "floors:write",
+        "roles:read",
+        "roles:write",
+        "tasks:read",
+        "tasks:write",
+        "approvals:read",
+        "approvals:create",
+        "approvals:resolve",
+        "sprints:read",
+        "sprints:write",
+        "events:read",
+        "config:write",
     },
     PrincipalRole.ORCHESTRATOR: {
         "floors:read",
         "roles:read",
-        "tasks:read", "tasks:write",
-        "approvals:read", "approvals:create",
-        "sprints:read", "sprints:write",
+        "tasks:read",
+        "tasks:write",
+        "approvals:read",
+        "approvals:create",
+        "sprints:read",
+        "sprints:write",
         "events:read",
     },
     PrincipalRole.WORKER: {
@@ -79,8 +95,8 @@ class Principal:
     def __init__(
         self,
         role: PrincipalRole,
-        floor_scopes: Optional[Set[str]] = None,
-        token_id: Optional[int] = None,
+        floor_scopes: set[str] | None = None,
+        token_id: int | None = None,
     ):
         self.role = role
         self.floor_scopes = floor_scopes
@@ -110,7 +126,7 @@ def hash_token(raw_token: str) -> str:
 
 async def get_principal(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
     settings: Settings = Depends(get_settings),
 ) -> Principal:
     """Extract and validate the authenticated principal from DB or static settings."""
@@ -150,14 +166,14 @@ async def get_principal(
                 if token_record.expires_at:
                     exp = token_record.expires_at
                     if exp.tzinfo is None:
-                        exp = exp.replace(tzinfo=timezone.utc)
-                    if exp < datetime.now(timezone.utc):
+                        exp = exp.replace(tzinfo=UTC)
+                    if exp < datetime.now(UTC):
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Token has expired",
                         )
 
-                scopes: Optional[Set[str]] = None
+                scopes: set[str] | None = None
                 if token_record.floor_scopes_json:
                     scopes = set(json.loads(token_record.floor_scopes_json))
 

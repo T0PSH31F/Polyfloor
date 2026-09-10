@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from ..db import get_engine
 from ..db.models import FloorEvent
@@ -24,7 +24,7 @@ class EventBus:
         self._global_subscribers: list[asyncio.Queue] = []
         self._handlers: list[Callable] = []
 
-    def subscribe(self, floor_id: Optional[str] = None) -> asyncio.Queue:
+    def subscribe(self, floor_id: str | None = None) -> asyncio.Queue:
         """Subscribe to events for a specific floor or globally."""
         q: asyncio.Queue = asyncio.Queue(maxsize=200)
         if floor_id:
@@ -33,7 +33,7 @@ class EventBus:
             self._global_subscribers.append(q)
         return q
 
-    def unsubscribe(self, q: asyncio.Queue, floor_id: Optional[str] = None):
+    def unsubscribe(self, q: asyncio.Queue, floor_id: str | None = None):
         """Remove a subscriber."""
         if floor_id:
             subs = self._subscribers.get(floor_id, [])
@@ -42,7 +42,9 @@ class EventBus:
         elif q in self._global_subscribers:
             self._global_subscribers.remove(q)
 
-    async def _persist_event(self, floor_id: str, event_type: str, payload: dict[str, Any], actor: str):
+    async def _persist_event(
+        self, floor_id: str, event_type: str, payload: dict[str, Any], actor: str
+    ):
         """Save event to database using SQLModel."""
         try:
             engine = get_engine()

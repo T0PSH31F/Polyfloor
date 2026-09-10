@@ -6,6 +6,7 @@ write within their designated floor output directory.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import tempfile
@@ -65,14 +66,14 @@ class OutputService:
         # Ensure resolved path is under the floor root
         try:
             target.relative_to(floor_root)
-        except ValueError:
-            raise OutputError(
-                f"Path '{relative_path}' escapes the floor output root"
-            )
+        except ValueError as err:
+            raise OutputError(f"Path '{relative_path}' escapes the floor output root") from err
 
         return target
 
-    def write_file(self, floor_id: str, relative_path: str, content: bytes, max_size: int = 10_485_760) -> Path:
+    def write_file(
+        self, floor_id: str, relative_path: str, content: bytes, max_size: int = 10_485_760
+    ) -> Path:
         """Atomically write a file to a floor's output directory.
 
         Args:
@@ -104,10 +105,8 @@ class OutputService:
             os.rename(tmp_path, target)
         except Exception:
             os.close(fd) if not os.get_inheritable(fd) else None
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp_path)
-            except OSError:
-                pass
             raise
 
         return target

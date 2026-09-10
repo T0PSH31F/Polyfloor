@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
 from sqlmodel import Field, SQLModel
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Task(SQLModel, table=True):
@@ -16,13 +16,13 @@ class Task(SQLModel, table=True):
 
     __tablename__ = "tasks"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     floor_id: str = Field(index=True)
-    sprint_id: Optional[int] = Field(default=None)
+    sprint_id: int | None = Field(default=None)
     title: str
     description: str = ""
     status: str = Field(default="backlog", index=True)
-    assigned_role: Optional[str] = Field(default=None)
+    assigned_role: str | None = Field(default=None)
     priority: int = Field(default=0)
     metadata_json: str = Field(default="{}")
     created_at: datetime = Field(default_factory=utc_now)
@@ -34,7 +34,7 @@ class FloorEvent(SQLModel, table=True):
 
     __tablename__ = "floor_events"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     floor_id: str = Field(index=True)
     event_type: str = Field(index=True)
     actor: str = Field(default="system")
@@ -47,17 +47,17 @@ class Approval(SQLModel, table=True):
 
     __tablename__ = "approvals"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     floor_id: str = Field(index=True)
-    task_id: Optional[int] = Field(default=None)
+    task_id: int | None = Field(default=None)
     approval_type: str
     description: str
     payload_json: str = Field(default="{}")
     status: str = Field(default="pending", index=True)
     requested_by: str
-    resolved_by: Optional[str] = Field(default=None)
+    resolved_by: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
-    resolved_at: Optional[datetime] = Field(default=None)
+    resolved_at: datetime | None = Field(default=None)
 
 
 class ApiToken(SQLModel, table=True):
@@ -65,13 +65,13 @@ class ApiToken(SQLModel, table=True):
 
     __tablename__ = "api_tokens"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     token_hash: str = Field(unique=True, index=True)
     name: str
     role: str = Field(index=True)  # e.g., "human_admin", "worker"
-    floor_scopes_json: Optional[str] = Field(default=None)  # JSON string array or None
+    floor_scopes_json: str | None = Field(default=None)  # JSON string array or None
     created_at: datetime = Field(default_factory=utc_now)
-    expires_at: Optional[datetime] = Field(default=None)
+    expires_at: datetime | None = Field(default=None)
     revoked: bool = Field(default=False, index=True)
 
 
@@ -80,8 +80,8 @@ class ApiAuditLog(SQLModel, table=True):
 
     __tablename__ = "api_audit_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    token_id: Optional[int] = Field(default=None)
+    id: int | None = Field(default=None, primary_key=True)
+    token_id: int | None = Field(default=None)
     principal_role: str
     endpoint: str
     method: str

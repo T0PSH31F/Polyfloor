@@ -1,10 +1,10 @@
 # Polyfloor — Task runner
 
 # Format all code
-format:
+fmt:
     nix fmt
-    cd backend && ruff format src/ tests/
-    cd frontend && npx prettier --write .
+
+format: fmt
 
 # Lint all code
 lint:
@@ -34,6 +34,9 @@ check:
 # Nix flake check
 nix-check:
     nix flake check --no-build
+
+# Run dev servers
+dev: dev-backend
 
 # Run backend dev server
 dev-backend:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/approvals", tags=["approvals"])
 
 class ApprovalCreate(BaseModel):
     floor_id: str
-    task_id: Optional[int] = None
+    task_id: int | None = None
     approval_type: str
     description: str
     payload: dict[str, Any] = {}
@@ -25,15 +25,15 @@ class ApprovalCreate(BaseModel):
 class ApprovalResponse(BaseModel):
     id: int
     floor_id: str
-    task_id: Optional[int]
+    task_id: int | None
     approval_type: str
     description: str
     payload: dict[str, Any]
     status: str
     requested_by: str
-    resolved_by: Optional[str]
+    resolved_by: str | None
     created_at: str
-    resolved_at: Optional[str]
+    resolved_at: str | None
 
 
 class ApprovalResolve(BaseModel):
@@ -43,8 +43,8 @@ class ApprovalResolve(BaseModel):
 
 @router.get("", response_model=list[ApprovalResponse])
 async def list_approvals(
-    floor_id: Optional[str] = None,
-    status: Optional[str] = None,
+    floor_id: str | None = None,
+    status: str | None = None,
     principal: Principal = Depends(require_scope("approvals:read")),
 ):
     """List approvals, optionally filtered."""

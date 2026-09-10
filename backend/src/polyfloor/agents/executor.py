@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from ..services.model_router import ModelRouter
-from . import AgentExecutor, ExecutionResult, TaskPacket, get_executor
+from . import ExecutionResult, TaskPacket, get_executor
 
 
 class FloorRunner:
@@ -27,9 +27,9 @@ class FloorRunner:
         description: str,
         model_spec: str = "free://best-reasoning",
         max_tokens: int = 4096,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         task_id: int = 0,
-        executor_name: Optional[str] = None,
+        executor_name: str | None = None,
     ) -> ExecutionResult:
         """Run a task through the agent execution pipeline.
 
@@ -49,7 +49,7 @@ class FloorRunner:
         """
         # Validate model routing
         try:
-            endpoint = self.model_router.resolve(model_spec)
+            self.model_router.resolve(model_spec)
         except ValueError as e:
             return ExecutionResult(
                 success=False,

@@ -6,14 +6,14 @@ Polyfloor exposes a standards-compliant MCP server for tool-calling agents.
 
 ### Available Tools
 
-| Tool | Description | Scopes |
-|------|-------------|--------|
-| `create_task` | Create a new task on a floor | tasks:write |
-| `list_tasks` | List tasks for a floor | tasks:read |
-| `get_sprint_status` | Get current sprint status | sprints:read |
-| `list_approvals` | List pending approvals | approvals:read |
-| `request_approval` | Request human approval | approvals:create |
-| `floor_status` | Get floor configuration | floors:read |
+| Tool                | Description                  | Scopes           |
+| ------------------- | ---------------------------- | ---------------- |
+| `create_task`       | Create a new task on a floor | tasks:write      |
+| `list_tasks`        | List tasks for a floor       | tasks:read       |
+| `get_sprint_status` | Get current sprint status    | sprints:read     |
+| `list_approvals`    | List pending approvals       | approvals:read   |
+| `request_approval`  | Request human approval       | approvals:create |
+| `floor_status`      | Get floor configuration      | floors:read      |
 
 ### Registration
 
@@ -86,6 +86,7 @@ GET  /api/v1/floors/{id}     → floor_status
 ## Agent Execution
 
 Polyfloor supports pluggable agent executors:
+
 - **NoopExecutor** — default, does nothing (testing)
 - **CrewAIExecutor** — optional, requires `pip install 'polyfloor[agents]'`
 - **OpenCodeExecutor** — disabled by default, explicit opt-in

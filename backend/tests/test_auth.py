@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
-from sqlmodel import select
 
 from polyfloor.auth import (
     ROLE_SCOPES,
@@ -19,7 +16,6 @@ from polyfloor.auth import (
     PrincipalRole,
     get_principal,
     hash_token,
-    require_scope,
 )
 from polyfloor.db.models import ApiToken
 
@@ -113,7 +109,7 @@ async def test_db_backed_token_expired(test_engine, test_session):
     raw_token = "expired_token_123"
     token_h = hash_token(raw_token)
 
-    expired_time = datetime.now(timezone.utc) - timedelta(hours=1)
+    expired_time = datetime.now(UTC) - timedelta(hours=1)
     db_token = ApiToken(
         token_hash=token_h,
         name="expired_worker",
