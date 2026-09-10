@@ -1,4 +1,6 @@
 # Python
+*.db
+*.sqlite
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,6 +8,7 @@ __pycache__/
 dist/
 build/
 .eggs/
+scratch/
 *.egg
 .mypy_cache/
 .ruff_cache/

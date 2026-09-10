@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
 
 import structlog
@@ -12,7 +12,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .db import close_pool, get_pool
+from .db import close_pool, get_pool, init_db
+from .floors import validate_floors_directory
 from .routers import approvals, events, floors, health, tasks
 
 logger = structlog.get_logger()
@@ -25,14 +26,33 @@ def _parse_origins(raw: str) -> list[str]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan: manage DB pool lifecycle."""
+    """Application lifespan: initialize SQLModel DB tables and validate floors."""
     settings = get_settings()
     logger.info("polyfloor.starting", host=settings.host, port=settings.port)
+
+    # Initialize SQLModel DB tables
+    try:
+        await init_db()
+        logger.info("polyfloor.sqlmodel_initialized")
+    except Exception as e:
+        logger.warning("polyfloor.sqlmodel_init_failed", error=str(e))
+
+    # Validate floors directory at startup if present
+    floors_dir = Path(__file__).resolve().parents[3] / "floors"
+    if floors_dir.exists():
+        try:
+            validated = validate_floors_directory(floors_dir)
+            logger.info("polyfloor.floors_validated", count=len(validated))
+        except Exception as e:
+            logger.error("polyfloor.floors_validation_failed", error=str(e))
+            raise
+
     try:
         await get_pool()
         logger.info("polyfloor.db_connected")
     except Exception as e:
         logger.warning("polyfloor.db_unavailable", error=str(e))
+
     yield
     await close_pool()
     logger.info("polyfloor.stopped")

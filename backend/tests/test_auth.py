@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
-from unittest.mock import patch
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import Depends, FastAPI
-from fastapi.testclient import TestClient
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlmodel import select
 
 from polyfloor.auth import (
+    ROLE_SCOPES,
     Principal,
     PrincipalRole,
-    ROLE_SCOPES,
     get_principal,
+    hash_token,
     require_scope,
 )
+from polyfloor.db.models import ApiToken
 
 
 def test_dev_mode_no_token():
@@ -47,23 +52,84 @@ def test_admin_has_all_scopes():
             assert admin.has_scope(scope), f"HUMAN_ADMIN missing scope: {scope}"
 
 
-def test_auth_required_for_mutations():
-    """When a token is configured, missing token returns 401."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write("test-token-12345")
-        token_file = f.name
+@pytest.mark.asyncio
+async def test_db_backed_token_valid(test_engine, test_session):
+    raw_token = "secret_worker_token_123"
+    token_h = hash_token(raw_token)
 
-    try:
-        with patch.dict(os.environ, {"POLYFLOOR_API_TOKEN_FILE": token_file}):
-            from polyfloor.config import Settings
-            from polyfloor.main import create_app
+    db_token = ApiToken(
+        token_hash=token_h,
+        name="test_worker",
+        role="worker",
+        floor_scopes_json=json.dumps(["dev_floor"]),
+    )
+    test_session.add(db_token)
+    await test_session.commit()
 
-            app = create_app()
-            client = TestClient(app)
+    req = MagicMock()
+    req.url.path = "/api/v1/tasks"
+    req.method = "GET"
 
-            # Without token → should work for read-only, fail for mutations
-            # (depends on router configuration)
-            resp = client.get("/healthz")
-            assert resp.status_code == 200
-    finally:
-        os.unlink(token_file)
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=raw_token)
+    settings = MagicMock()
+    settings.security.get_api_token.return_value = "static_file_token_456"
+
+    with patch("polyfloor.auth.get_engine", return_value=test_engine):
+        principal = await get_principal(request=req, credentials=creds, settings=settings)
+
+    assert principal.role == PrincipalRole.WORKER
+    assert principal.can_access_floor("dev_floor")
+    assert not principal.can_access_floor("prod_floor")
+
+
+@pytest.mark.asyncio
+async def test_db_backed_token_revoked(test_engine, test_session):
+    raw_token = "revoked_token_123"
+    token_h = hash_token(raw_token)
+
+    db_token = ApiToken(
+        token_hash=token_h,
+        name="revoked_worker",
+        role="worker",
+        revoked=True,
+    )
+    test_session.add(db_token)
+    await test_session.commit()
+
+    req = MagicMock()
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=raw_token)
+    settings = MagicMock()
+    settings.security.get_api_token.return_value = "static_file_token_456"
+
+    with patch("polyfloor.auth.get_engine", return_value=test_engine):
+        with pytest.raises(HTTPException) as exc_info:
+            await get_principal(request=req, credentials=creds, settings=settings)
+        assert exc_info.value.status_code == 401
+        assert "revoked" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_db_backed_token_expired(test_engine, test_session):
+    raw_token = "expired_token_123"
+    token_h = hash_token(raw_token)
+
+    expired_time = datetime.now(timezone.utc) - timedelta(hours=1)
+    db_token = ApiToken(
+        token_hash=token_h,
+        name="expired_worker",
+        role="worker",
+        expires_at=expired_time,
+    )
+    test_session.add(db_token)
+    await test_session.commit()
+
+    req = MagicMock()
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=raw_token)
+    settings = MagicMock()
+    settings.security.get_api_token.return_value = "static_file_token_456"
+
+    with patch("polyfloor.auth.get_engine", return_value=test_engine):
+        with pytest.raises(HTTPException) as exc_info:
+            await get_principal(request=req, credentials=creds, settings=settings)
+        assert exc_info.value.status_code == 401
+        assert "expired" in exc_info.value.detail

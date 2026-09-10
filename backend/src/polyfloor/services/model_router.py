@@ -1,17 +1,20 @@
 """Model router — resolves logical aliases to model endpoints.
 
-Free-first design:
+Multi-provider design:
 1. Local Hermes/Ollama if specifically selected
-2. ExtremeRouter free model routing by default
+2. Primary provider (Kong gateway) with fallback to ExtremeRouter
 3. Paid providers only when explicitly enabled globally AND per floor/role
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -22,16 +25,19 @@ class ModelEndpoint:
     model: str
     api_key: Optional[str] = None
     is_paid: bool = False
+    fallback_url: Optional[str] = None
+    fallback_api_key: Optional[str] = None
 
 
 class ModelRouter:
-    """Routes logical model aliases to concrete endpoints."""
+    """Routes logical model aliases to concrete endpoints with fallback support."""
 
-    # Logical alias prefixes
     ALIAS_PREFIXES = ("free://", "hermes:", "paid://")
 
     def __init__(
         self,
+        kong_url: str = "http://127.0.0.1:8000/v1",
+        kong_api_key: Optional[str] = None,
         extreme_router_url: str = "https://router.extreme.ai/v1",
         extreme_router_api_key: Optional[str] = None,
         hermes_url: str = "http://127.0.0.1:11434/v1",
@@ -40,7 +46,10 @@ class ModelRouter:
         fast_alias: str = "best-fast",
         code_alias: str = "best-code",
         allow_paid: bool = False,
+        request_timeout_seconds: float = 120.0,
     ):
+        self.kong_url = kong_url
+        self.kong_api_key = kong_api_key
         self.extreme_router_url = extreme_router_url
         self.extreme_router_api_key = extreme_router_api_key
         self.hermes_url = hermes_url
@@ -51,21 +60,19 @@ class ModelRouter:
             "best-code": code_alias,
         }
         self.allow_paid = allow_paid
+        self.request_timeout_seconds = request_timeout_seconds
 
     def resolve(self, model_spec: str, floor_paid_allowed: bool = False) -> ModelEndpoint:
-        """Resolve a logical model spec to a concrete endpoint.
+        """Resolve a logical model spec to a primary endpoint and fallback endpoint.
 
         Args:
             model_spec: e.g. "free://best-reasoning", "hermes:llama3", "paid://gpt-4o"
             floor_paid_allowed: whether the floor has opted into paid models
 
         Returns:
-            ModelEndpoint with resolved URL and model name
-
-        Raises:
-            ValueError: if paid model is requested but not allowed
+            ModelEndpoint with primary & fallback configuration
         """
-        # Hermes/local model
+        # Hermes / local model
         if model_spec.startswith("hermes:"):
             local_model = model_spec.removeprefix("hermes:")
             return ModelEndpoint(
@@ -78,35 +85,35 @@ class ModelRouter:
         # Paid model — requires both global and floor opt-in
         if model_spec.startswith("paid://"):
             if not self.allow_paid:
-                raise ValueError(
-                    f"Paid models are globally disabled. Cannot use '{model_spec}'"
-                )
+                raise ValueError(f"Paid models are globally disabled. Cannot use '{model_spec}'")
             if not floor_paid_allowed:
                 raise ValueError(
                     f"Paid models are not allowed for this floor. Cannot use '{model_spec}'"
                 )
             actual_model = model_spec.removeprefix("paid://")
             return ModelEndpoint(
-                base_url=self.extreme_router_url,
+                base_url=self.kong_url,
                 model=actual_model,
-                api_key=self.extreme_router_api_key,
+                api_key=self.kong_api_key,
                 is_paid=True,
+                fallback_url=self.extreme_router_url,
+                fallback_api_key=self.extreme_router_api_key,
             )
 
         # Free model (default path)
         if model_spec.startswith("free://"):
             alias = model_spec.removeprefix("free://")
         else:
-            # Bare alias — treat as free
             alias = model_spec
 
-        # Resolve alias through the map
         resolved = self.alias_map.get(alias, alias)
         return ModelEndpoint(
             base_url=self.extreme_router_url,
             model=resolved,
             api_key=self.extreme_router_api_key,
             is_paid=False,
+            fallback_url=self.kong_url,
+            fallback_api_key=self.kong_api_key,
         )
 
     async def chat_completion(
@@ -116,11 +123,7 @@ class ModelRouter:
         max_tokens: int = 4096,
         temperature: float = 0.7,
     ) -> dict:
-        """Make an OpenAI-compatible chat completion request."""
-        headers = {"Content-Type": "application/json"}
-        if endpoint.api_key:
-            headers["Authorization"] = f"Bearer {endpoint.api_key}"
-
+        """Make an OpenAI-compatible chat completion request with provider fallback."""
         payload = {
             "model": endpoint.model,
             "messages": messages,
@@ -128,9 +131,34 @@ class ModelRouter:
             "temperature": temperature,
         }
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        # Try primary endpoint
+        try:
+            return await self._send_request(
+                base_url=endpoint.base_url,
+                api_key=endpoint.api_key,
+                payload=payload,
+            )
+        except Exception as primary_err:
+            if not endpoint.fallback_url:
+                raise primary_err
+            logger.warning(
+                f"Primary provider request failed ({primary_err}), falling back to {endpoint.fallback_url}"
+            )
+            # Try fallback endpoint
+            return await self._send_request(
+                base_url=endpoint.fallback_url,
+                api_key=endpoint.fallback_api_key,
+                payload=payload,
+            )
+
+    async def _send_request(self, base_url: str, api_key: Optional[str], payload: dict) -> dict:
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        async with httpx.AsyncClient(timeout=self.request_timeout_seconds) as client:
             resp = await client.post(
-                f"{endpoint.base_url}/chat/completions",
+                f"{base_url}/chat/completions",
                 json=payload,
                 headers=headers,
             )

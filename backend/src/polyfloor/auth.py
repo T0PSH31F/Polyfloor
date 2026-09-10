@@ -1,22 +1,22 @@
-"""Bearer token authentication and role-based authorization.
-
-The scaffold uses a static API token loaded from a file, mapped to
-principal roles and floor scopes. No database-backed tokens in the
-initial implementation.
-"""
+"""Bearer token authentication and role-based authorization with DB backing."""
 
 from __future__ import annotations
 
 import hashlib
 import hmac
+import json
+from datetime import datetime, timezone
 from enum import Enum
-from functools import wraps
 from typing import Optional, Set
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from .config import Settings, get_settings
+from .db import get_engine
+from .db.models import ApiAuditLog, ApiToken
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -31,7 +31,6 @@ class PrincipalRole(str, Enum):
     READONLY = "readonly"
 
 
-# Role → allowed scopes
 ROLE_SCOPES: dict[PrincipalRole, Set[str]] = {
     PrincipalRole.HUMAN_ADMIN: {
         "floors:read", "floors:write",
@@ -77,9 +76,15 @@ ROLE_SCOPES: dict[PrincipalRole, Set[str]] = {
 class Principal:
     """Authenticated API principal."""
 
-    def __init__(self, role: PrincipalRole, floor_scopes: Optional[Set[str]] = None):
+    def __init__(
+        self,
+        role: PrincipalRole,
+        floor_scopes: Optional[Set[str]] = None,
+        token_id: Optional[int] = None,
+    ):
         self.role = role
-        self.floor_scopes = floor_scopes  # None = all floors, set = scoped
+        self.floor_scopes = floor_scopes
+        self.token_id = token_id
 
     def has_scope(self, scope: str) -> bool:
         return scope in ROLE_SCOPES.get(self.role, set())
@@ -90,7 +95,6 @@ class Principal:
         return floor_id in self.floor_scopes
 
 
-# Default principal for development (no token file configured)
 _DEV_PRINCIPAL = Principal(role=PrincipalRole.HUMAN_ADMIN)
 
 
@@ -99,35 +103,86 @@ def _constant_time_compare(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode(), b.encode())
 
 
+def hash_token(raw_token: str) -> str:
+    """Compute SHA-256 hash of API token."""
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
 async def get_principal(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
     settings: Settings = Depends(get_settings),
 ) -> Principal:
-    """Extract and validate the authenticated principal from the request."""
-    token = settings.security.get_api_token()
+    """Extract and validate the authenticated principal from DB or static settings."""
+    static_token = settings.security.get_api_token()
 
-    # If no token file configured, use dev principal (development mode)
-    if token is None:
-        return _DEV_PRINCIPAL
-
-    # Require bearer token
+    # If no credentials provided: check dev fallback
     if credentials is None:
+        if static_token is None:
+            return _DEV_PRINCIPAL
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authentication token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if not _constant_time_compare(credentials.credentials, token):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token",
-        )
+    raw_token = credentials.credentials
 
-    # For the scaffold, the single token maps to human_admin
-    # A production system would look up the token in a database
-    return Principal(role=PrincipalRole.HUMAN_ADMIN)
+    # Check static token file fallback if configured
+    if static_token and _constant_time_compare(raw_token, static_token):
+        return Principal(role=PrincipalRole.HUMAN_ADMIN)
+
+    # Check database-backed tokens
+    token_h = hash_token(raw_token)
+    try:
+        engine = get_engine()
+        async with AsyncSession(engine) as session:
+            stmt = select(ApiToken).where(ApiToken.token_hash == token_h)
+            result = await session.execute(stmt)
+            token_record = result.scalar_one_or_none()
+
+            if token_record is not None:
+                if token_record.revoked:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token has been revoked",
+                    )
+                if token_record.expires_at:
+                    exp = token_record.expires_at
+                    if exp.tzinfo is None:
+                        exp = exp.replace(tzinfo=timezone.utc)
+                    if exp < datetime.now(timezone.utc):
+                        raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Token has expired",
+                        )
+
+                scopes: Optional[Set[str]] = None
+                if token_record.floor_scopes_json:
+                    scopes = set(json.loads(token_record.floor_scopes_json))
+
+                role = PrincipalRole(token_record.role)
+                principal = Principal(role=role, floor_scopes=scopes, token_id=token_record.id)
+
+                # Audit log entry
+                audit = ApiAuditLog(
+                    token_id=token_record.id,
+                    principal_role=role.value,
+                    endpoint=request.url.path,
+                    method=request.method,
+                )
+                session.add(audit)
+                await session.commit()
+                return principal
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid authentication token",
+    )
 
 
 def require_scope(scope: str):
