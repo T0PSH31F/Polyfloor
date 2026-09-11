@@ -46,7 +46,9 @@ export function getCompanies(): Promise<CompanyCard[]> {
   return request<CompanyCard[]>("/companies");
 }
 
-export function createCompany(body: CompanyCreateRequest): Promise<CompanyCard> {
+export function createCompany(
+  body: CompanyCreateRequest,
+): Promise<CompanyCard> {
   return request<CompanyCard>("/companies", {
     method: "POST",
     body: JSON.stringify(body),
@@ -62,9 +64,7 @@ export function getRoom(
   companyId: string,
   roomId: string,
 ): Promise<RoomDetail> {
-  return request<RoomDetail>(
-    `/companies/${companyId}/rooms/${roomId}`,
-  );
+  return request<RoomDetail>(`/companies/${companyId}/rooms/${roomId}`);
 }
 
 // --- Agents ---
@@ -72,9 +72,7 @@ export function getAgent(
   companyId: string,
   agentId: string,
 ): Promise<AgentDossier> {
-  return request<AgentDossier>(
-    `/companies/${companyId}/agents/${agentId}`,
-  );
+  return request<AgentDossier>(`/companies/${companyId}/agents/${agentId}`);
 }
 
 export function avatarUrl(companyId: string, agentId: string): string {

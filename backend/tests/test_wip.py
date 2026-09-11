@@ -35,7 +35,9 @@ async def test_wip_limit_blocks_fourth_in_progress(test_session):
                 status="READY",
             ),
         )
-        t = await repo.transition_task(test_session, ctx, t.id, "IN_PROGRESS", wip_limit=3, team_id=team_id)  # type: ignore[arg-type]
+        t = await repo.transition_task(
+            test_session, ctx, t.id, "IN_PROGRESS", wip_limit=3, team_id=team_id
+        )  # type: ignore[arg-type]
         started.append(t)
     assert len(started) == 3
 
@@ -48,18 +50,21 @@ async def test_wip_limit_blocks_fourth_in_progress(test_session):
             owner_agent_id="co_wip_rnd_lead",
             title="Extra 3",
             status="READY",
-        )
+        ),
     )
     with pytest.raises(PermissionError):
         await repo.transition_task(
-            test_session, ctx, fourth.id, "IN_PROGRESS", wip_limit=3, team_id=team_id  # type: ignore[arg-type]
+            test_session,
+            ctx,
+            fourth.id,
+            "IN_PROGRESS",
+            wip_limit=3,
+            team_id=team_id,  # type: ignore[arg-type]
         )
 
 
 async def test_invalid_transition_rejected(test_session):
-    await bootstrap.bootstrap_company(
-        test_session, company_id="co_t", name="T", slug="t", goal="x"
-    )
+    await bootstrap.bootstrap_company(test_session, company_id="co_t", name="T", slug="t", goal="x")
     ctx = CompanyContext("co_t")
     tasks = await repo.list_tasks(test_session, ctx)
     first = tasks[0]

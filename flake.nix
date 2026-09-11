@@ -43,7 +43,7 @@
         };
       };
 
-      perSystem = { config, pkgs, system, self', ... }: {
+      perSystem = { config, pkgs, self', ... }: {
         treefmt = {
           projectRootFile = "flake.nix";
           programs.nixpkgs-fmt.enable = true;

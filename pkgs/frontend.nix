@@ -1,6 +1,6 @@
-{
-  lib,
-  buildNpmPackage,
+{ lib
+, buildNpmPackage
+,
 }:
 
 buildNpmPackage {

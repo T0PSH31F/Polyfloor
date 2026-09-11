@@ -74,6 +74,4 @@ async def test_cross_company_model_update_rejected(test_session, ctx_a, ctx_b):
         test_session, company_id="co_alpha", name="Alpha", slug="alpha", goal="x"
     )
     with pytest.raises(LookupError):
-        await repo.update_agent_model(
-            test_session, ctx_b, "co_alpha_ceo", "some-model"
-        )
+        await repo.update_agent_model(test_session, ctx_b, "co_alpha_ceo", "some-model")

@@ -2,11 +2,10 @@
 #
 # `services.polyfloor` runs the FastAPI backend (which also serves the built
 # SvelteKit SPA when `staticDir` is set). Hardened systemd sandbox per SPEC §11.
-{
-  config,
-  lib,
-  pkgs,
-  ...
+{ config
+, lib
+, pkgs
+, ...
 }:
 
 with lib;

@@ -22,7 +22,9 @@ router = APIRouter(tags=["actions"])
 
 class ActionRequest(BaseModel):
     company_id: str
-    action: str  # approve | reject | pause | resume | stop | advance_task | request_hire | execute_hire
+    action: (
+        str  # approve | reject | pause | resume | stop | advance_task | request_hire | execute_hire
+    )
     target_type: str = "approval"  # approval | agent | task | team
     target_id: str
     payload: dict[str, Any] = {}

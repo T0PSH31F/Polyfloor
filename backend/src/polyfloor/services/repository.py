@@ -247,9 +247,7 @@ async def transition_task(
         if tid:
             current = await count_in_progress(session, ctx, tid)
             if current >= wip_limit:
-                raise PermissionError(
-                    f"WIP limit reached ({current}/{wip_limit}) for team {tid}"
-                )
+                raise PermissionError(f"WIP limit reached ({current}/{wip_limit}) for team {tid}")
     task.status = new_status
     task.updated_at = datetime.now(UTC)
     await session.commit()
@@ -260,9 +258,7 @@ async def transition_task(
 # --------------------------------------------------------------------------- #
 # Events
 # --------------------------------------------------------------------------- #
-async def list_events(
-    session: AsyncSession, ctx: CompanyContext, limit: int = 100
-) -> list[Event]:
+async def list_events(session: AsyncSession, ctx: CompanyContext, limit: int = 100) -> list[Event]:
     res = await session.execute(
         select(Event)
         .where(Event.company_id == ctx.company_id)
@@ -293,9 +289,7 @@ async def get_artifact(
     session: AsyncSession, ctx: CompanyContext, artifact_id: int
 ) -> Artifact | None:
     res = await session.execute(
-        select(Artifact).where(
-            Artifact.id == artifact_id, Artifact.company_id == ctx.company_id
-        )
+        select(Artifact).where(Artifact.id == artifact_id, Artifact.company_id == ctx.company_id)
     )
     return res.scalar_one_or_none()
 
@@ -329,9 +323,7 @@ async def resolve_approval(
     decided_by: str,
 ) -> Approval:
     res = await session.execute(
-        select(Approval).where(
-            Approval.id == approval_id, Approval.company_id == ctx.company_id
-        )
+        select(Approval).where(Approval.id == approval_id, Approval.company_id == ctx.company_id)
     )
     approval = res.scalar_one_or_none()
     if approval is None:

@@ -1,8 +1,8 @@
-{
-  lib,
-  stdenv,
-  polyfloor-backend,
-  makeWrapper,
+{ lib
+, stdenv
+, polyfloor-backend
+, makeWrapper
+,
 }:
 
 stdenv.mkDerivation {

@@ -178,9 +178,7 @@ async def dispatch_action(
 ) -> dict:
     """Execute a company-scoped action. Raises on policy violations."""
     if action == "approve":
-        approval = await repo.resolve_approval(
-            session, ctx, int(target_id), "APPROVED", ctx.actor
-        )
+        approval = await repo.resolve_approval(session, ctx, int(target_id), "APPROVED", ctx.actor)
         await event_bus.publish(
             ctx,
             "approval.resolved",
@@ -190,9 +188,7 @@ async def dispatch_action(
         return {"approval": approval.model_dump()}
 
     if action == "reject":
-        approval = await repo.resolve_approval(
-            session, ctx, int(target_id), "REJECTED", ctx.actor
-        )
+        approval = await repo.resolve_approval(session, ctx, int(target_id), "REJECTED", ctx.actor)
         await event_bus.publish(
             ctx,
             "approval.resolved",

@@ -50,7 +50,11 @@ async def test_metrics_exposed(api_client):
 async def test_create_company_yields_full_org_and_gated_path(api_client):
     resp = await api_client.post(
         "/api/companies",
-        json={"name": "Lumin Press", "goal": "ship a digital product", "template_id": "digital-products"},
+        json={
+            "name": "Lumin Press",
+            "goal": "ship a digital product",
+            "template_id": "digital-products",
+        },
     )
     assert resp.status_code == 201, resp.text
     company = resp.json()
@@ -117,18 +121,29 @@ async def test_advance_task_and_approve_publish(api_client):
     # Advance the first stage to completion.
     adv = await api_client.post(
         "/api/actions",
-        json={"company_id": cid, "action": "advance_task", "target_type": "task", "target_id": str(ready["id"])},
+        json={
+            "company_id": cid,
+            "action": "advance_task",
+            "target_type": "task",
+            "target_id": str(ready["id"]),
+        },
     )
     assert adv.status_code == 200, adv.text
 
     # Resolve the publish approval (the gated irreversible action).
     publish_approval = next(
-        a for a in (await api_client.get(f"/api/companies/{cid}/state")).json()["approvals"]
+        a
+        for a in (await api_client.get(f"/api/companies/{cid}/state")).json()["approvals"]
         if a["policy_key"] == "publish"
     )
     dec = await api_client.post(
         "/api/actions",
-        json={"company_id": cid, "action": "approve", "target_type": "approval", "target_id": str(publish_approval["id"])},
+        json={
+            "company_id": cid,
+            "action": "approve",
+            "target_type": "approval",
+            "target_id": str(publish_approval["id"]),
+        },
     )
     assert dec.status_code == 200, dec.text
     assert dec.json()["result"]["approval"]["status"] == "APPROVED"

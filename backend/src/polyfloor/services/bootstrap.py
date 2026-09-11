@@ -163,7 +163,7 @@ async def bootstrap_company(
                 name=spec.name,
                 role_type=spec.role_type,
                 room_id=room.id,
-            )
+            ),
         )
         # Lead desk (ordinal 0) + 5 worker desks.
         for ordinal in range(6):
@@ -201,7 +201,9 @@ async def bootstrap_company(
             id=f"{company_id}_{aid}",
             company_id=company_id,
             team_id=(
-                f"{company_id}_team_{room_key}" if room_key in {t.id for t in template.teams} else None
+                f"{company_id}_team_{room_key}"
+                if room_key in {t.id for t in template.teams}
+                else None
             ),
             role=arole,
             name=aname,
@@ -252,9 +254,7 @@ async def bootstrap_company(
             description=f"Stage {idx + 1}/{len(template.pipeline)}: {stage} for: {goal}",
             status=status,
             priority=10 - idx,
-            acceptance_criteria_json=json.dumps(
-                [f"{stage} artifact reviewed and approved"]
-            ),
+            acceptance_criteria_json=json.dumps([f"{stage} artifact reviewed and approved"]),
             budget_limit=1.0,
             retry_limit=2,
             trace_id=f"{company_id}-pipeline",
@@ -275,7 +275,7 @@ async def bootstrap_company(
                 policy_key="publish",
                 risk_level="high",
                 payload_json=json.dumps({"stage": "publish", "target": goal}),
-            )
+            ),
         )
 
     # --- Seed events ---

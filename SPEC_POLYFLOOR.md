@@ -38,13 +38,13 @@ company_id -> floor_id -> room_id -> desk_id -> agent_id
 
 ## 2. Why This Model
 
-Department-per-floor (R&D on 4F, marketing on 3F, HR on 2F) is a good office metaphor for a *single* giant organization. It is a bad tenant model. It makes it easy for company B's email, social, memory, or customer queue to leak into company A.
+Department-per-floor (R&D on 4F, marketing on 3F, HR on 2F) is a good office metaphor for a _single_ giant organization. It is a bad tenant model. It makes it easy for company B's email, social, memory, or customer queue to leak into company A.
 
 Company-per-tenant with a lobby + clickable team rooms:
 
 - Keeps every credential, inbox, phone number, memory namespace, and ledger inside one company.
 - Gives a direct production line: R&D -> product -> QA -> marketing -> publish.
-- Scales visually by adding rooms, then extra floors *inside the same company*.
+- Scales visually by adding rooms, then extra floors _inside the same company_.
 - Starting another company means creating another tenant, not another entangled department.
 
 ---
@@ -102,12 +102,12 @@ Clicking an agent opens the bottom-screen dossier.
 
 ### 3.3 Semantic zoom
 
-| Level | What is rendered | Typical sprite count |
-|---|---|---|
-| Company directory (1F) | Company cards | 0-12 cards |
-| Company lobby | Room tiles + KPI badges | 0-8 overview sprites |
-| Team room | Lead + workers at desks | 1-6 sprites |
-| Agent dossier | Portrait, metrics, actions | 1 bust |
+| Level                  | What is rendered           | Typical sprite count |
+| ---------------------- | -------------------------- | -------------------- |
+| Company directory (1F) | Company cards              | 0-12 cards           |
+| Company lobby          | Room tiles + KPI badges    | 0-8 overview sprites |
+| Team room              | Lead + workers at desks    | 1-6 sprites          |
+| Agent dossier          | Portrait, metrics, actions | 1 bust               |
 
 Do not animate 40 workers on one 320x240 map.
 
@@ -128,28 +128,28 @@ Never put two companies on one visual floor.
 
 Every request, event, task, artifact, trace, log, and secret lookup requires `company_id`.
 
-| Resource | Boundary |
-|---|---|
-| Company identity | Immutable `company_id` on all records |
-| Agents | An agent belongs to exactly one company |
-| Boards / tasks / events | Queries and writes filter by `company_id` |
-| Memory | Separate Honcho/brain-service namespace per company |
-| Credentials | Per-company secret path and capability grant; no global email/social agent |
-| Tools / MCP | Platform catalog + explicit per-company allowlist and credential binding |
-| Router spend | Per-company virtual key, tags, budget, rate limit |
-| Workspaces | `/var/lib/polyfloor/companies/<company_id>/` |
-| Logs / traces | `company_id`, `agent_id`, `task_id`, `trace_id`; redaction policy |
-| User channels | Phone, mailbox, Telegram bot, social account maps to one company |
+| Resource                | Boundary                                                                   |
+| ----------------------- | -------------------------------------------------------------------------- |
+| Company identity        | Immutable `company_id` on all records                                      |
+| Agents                  | An agent belongs to exactly one company                                    |
+| Boards / tasks / events | Queries and writes filter by `company_id`                                  |
+| Memory                  | Separate Honcho/brain-service namespace per company                        |
+| Credentials             | Per-company secret path and capability grant; no global email/social agent |
+| Tools / MCP             | Platform catalog + explicit per-company allowlist and credential binding   |
+| Router spend            | Per-company virtual key, tags, budget, rate limit                          |
+| Workspaces              | `/var/lib/polyfloor/companies/<company_id>/`                               |
+| Logs / traces           | `company_id`, `agent_id`, `task_id`, `trace_id`; redaction policy          |
+| User channels           | Phone, mailbox, Telegram bot, social account maps to one company           |
 
 Agents never receive raw credentials. They request a **capability** (`send_customer_email`, `publish_listing`). The platform resolves the company-scoped secret after policy checks.
 
 Isolation tiers:
 
-| Tier | Model | Use |
-|---|---|---|
-| Development | Shared process, strict `company_id`, distinct workspace roots | UI/dev, mock companies |
-| Standard | Per-company queue, router key, memory namespace, workspace, secrets | Real businesses |
-| High-risk | Per-company systemd/container, separate DB role, hardened sandbox | Customer data, money, authenticated publishing |
+| Tier        | Model                                                               | Use                                            |
+| ----------- | ------------------------------------------------------------------- | ---------------------------------------------- |
+| Development | Shared process, strict `company_id`, distinct workspace roots       | UI/dev, mock companies                         |
+| Standard    | Per-company queue, router key, memory namespace, workspace, secrets | Real businesses                                |
+| High-risk   | Per-company systemd/container, separate DB role, hardened sandbox   | Customer data, money, authenticated publishing |
 
 MVP implements Development + Standard. High-risk is designed for, not required on day one.
 
@@ -162,7 +162,7 @@ MVP implements Development + Standard. High-risk is designed for, not required o
 - Owns company summary, strategy, and user-facing brief.
 - Receives C-suite memos and approval-gated items.
 - Cannot bypass budget, policy, or external-action gates.
-- May *compose* user notifications; the backend sends them after policy validation.
+- May _compose_ user notifications; the backend sends them after policy validation.
 - Sole company agent allowed to request user-channel dispatch.
 
 ### HR Coordinator
@@ -193,11 +193,11 @@ Team leads **request** specialists. They never spawn agents or grant tools direc
 ### QA / release gate
 
 1. Lead moves work to `REVIEW`.
-2. QA panel runs independent reviewers.
-3. Outcomes become immutable review records.
-4. Failures return to the originating team.
-5. Passing artifacts that spend money, publish, or create legal/brand exposure go to `AWAITING_APPROVAL`.
-6. Only then may a capability-gated publish/ship run.
+1. QA panel runs independent reviewers.
+1. Outcomes become immutable review records.
+1. Failures return to the originating team.
+1. Passing artifacts that spend money, publish, or create legal/brand exposure go to `AWAITING_APPROVAL`.
+1. Only then may a capability-gated publish/ship run.
 
 ---
 
@@ -205,12 +205,12 @@ Team leads **request** specialists. They never spawn agents or grant tools direc
 
 Use four systems. Do not collapse them into one chat log.
 
-| System | Purpose |
-|---|---|
+| System                | Purpose                                                    |
+| --------------------- | ---------------------------------------------------------- |
 | Append-only event log | Audit trail: requests, decisions, errors, staffing, policy |
-| Kanban / task DAG | Execution: owner, status, criteria, budget, retries |
-| Artifact registry | What was produced: URI, hash, lineage, review status |
-| Approval queue | Human/CEO gates: spend, hire, publish, irreversible I/O |
+| Kanban / task DAG     | Execution: owner, status, criteria, budget, retries        |
+| Artifact registry     | What was produced: URI, hash, lineage, review status       |
+| Approval queue        | Human/CEO gates: spend, hire, publish, irreversible I/O    |
 
 ### 6.1 Event log
 
@@ -265,14 +265,14 @@ Dependencies are explicit task edges, not ambient board reading.
 
 Do not hardcode the same departments into every company. Intake selects a template; HR materializes the org graph.
 
-| Template | Default teams | Hard gates |
-|---|---|---|
-| Digital products | R&D, product/writing, creative, marketing, distribution, customer ops | Marketplace publish, paid assets |
-| Freelance agency | Intake/sales, delivery, QA, client success, finance | Client send, deadline change |
-| E-commerce / dropship | Research, supplier ops, storefront, creative, marketing, support | Purchase, ad spend, listing, refund |
-| Creator / influencer | Strategy, production, editing, distribution, community | Public post, sponsor reply |
-| Investment research | Research, risk, data, compliance | Any trade/execution stays human-approved |
-| CAD / 3D assets | Design, production, rendering, QA, marketplace | Publish, paid compute |
+| Template              | Default teams                                                         | Hard gates                               |
+| --------------------- | --------------------------------------------------------------------- | ---------------------------------------- |
+| Digital products      | R&D, product/writing, creative, marketing, distribution, customer ops | Marketplace publish, paid assets         |
+| Freelance agency      | Intake/sales, delivery, QA, client success, finance                   | Client send, deadline change             |
+| E-commerce / dropship | Research, supplier ops, storefront, creative, marketing, support      | Purchase, ad spend, listing, refund      |
+| Creator / influencer  | Strategy, production, editing, distribution, community                | Public post, sponsor reply               |
+| Investment research   | Research, risk, data, compliance                                      | Any trade/execution stays human-approved |
+| CAD / 3D assets       | Design, production, rendering, QA, marketplace                        | Publish, paid compute                    |
 
 Custom/oddball prompts still produce a template-like org: goal, teams, policies, model routes, WIP, required capabilities.
 
@@ -285,14 +285,14 @@ Custom/oddball prompts still produce a template-like org: goal, teams, policies,
 - **Top screen:** HTML5 2D canvas, 320x240 virtual, 16x16 tiles, integer nearest-neighbor scale 3x or 4x, `image-rendering: pixelated`.
 - **Bottom screen:** DOM Pokétch/communicator: portraits, typewriter text, actions, boards, model selector.
 - No WebGL, no Three.js, no isometric engine.
-- LimeZu *Modern Interiors* 16x16 only. Use `frontend/static/assets/room_builder.png`, `interiors.png`, `characters/`, and `ASSET_MANIFEST.md`.
+- LimeZu _Modern Interiors_ 16x16 only. Use `frontend/static/assets/room_builder.png`, `interiors.png`, `characters/`, and `ASSET_MANIFEST.md`.
 
 ### 8.2 Game loop
 
 - Static tiles rendered once to an offscreen/background canvas on room/floor change.
 - Dynamic layer: sprites, bubbles, badges.
 - Browser animates cosmetic idle locally (2-frame breath/type).
-- Backend SSE sends *state deltas only*: assignment, task status, approvals, metrics. No 60 Hz simulation tick.
+- Backend SSE sends _state deltas only_: assignment, task status, approvals, metrics. No 60 Hz simulation tick.
 
 ### 8.3 Bottom-screen dossier
 
@@ -309,11 +309,11 @@ When an agent is selected:
 Fresh install / new company:
 
 1. Reception greeting.
-2. Business-goal prompt.
-3. Grilling intensity: 4 multiple-choice tiers.
-4. Name, logo, template, initial teams, budget policy, escalation channels.
-5. HR generates the company tenant and lobby.
-6. User returns to 1F later to create *another company*. Changes to an existing company go through that company's CEO/HR, not a global wizard overwrite.
+1. Business-goal prompt.
+1. Grilling intensity: 4 multiple-choice tiers.
+1. Name, logo, template, initial teams, budget policy, escalation channels.
+1. HR generates the company tenant and lobby.
+1. User returns to 1F later to create _another company_. Changes to an existing company go through that company's CEO/HR, not a global wizard overwrite.
 
 ### 8.5 Transport
 
@@ -381,11 +381,11 @@ Repository/service APIs take a mandatory `CompanyContext`. A missing company id 
 
 ## 10. Escalation
 
-| Level | Channel | Examples |
-|---|---|---|
-| Low | Bottom-screen badge | Task done, idle worker, info |
-| Medium | Telegram | Hiring approval, budget threshold, campaign/product ready for review |
-| Critical | SMS / Twilio voice | Runaway loop, spend breach, unauthorized I/O, security failure |
+| Level    | Channel             | Examples                                                             |
+| -------- | ------------------- | -------------------------------------------------------------------- |
+| Low      | Bottom-screen badge | Task done, idle worker, info                                         |
+| Medium   | Telegram            | Hiring approval, budget threshold, campaign/product ready for review |
+| Critical | SMS / Twilio voice  | Runaway loop, spend breach, unauthorized I/O, security failure       |
 
 Backend policy sends notifications. Agents request them; they do not hold channel tokens.
 
@@ -429,16 +429,16 @@ README must cover: quick start, module options, router/model setup, secrets, cre
 ## 12. Implementation Order (MVP)
 
 1. Company tenant boundary: schema, `CompanyContext`, workspace roots, memory namespace hook, router labels.
-2. Dual-screen shell + lobby directory + 1F intake wizard.
-3. Team room canvas + vacant/occupied desks + sprite states.
-4. Bottom-screen dossier, model dropdown, approve/pause.
-5. Event log + Kanban + approvals APIs and UI drawers.
-6. HR staffing: request -> policy/budget -> hire/reuse -> desk + capabilities + avatar.
-7. SSE live updates and mock-to-live router client.
-8. One digital-products template end-to-end: research -> spec -> draft -> QA -> marketing assets -> gated publish request.
-9. Tests, traces, metrics, README, `feature_list.json` pass flags.
-10. NFP integration: import `nixosModules.default`, point `routerEndpoint` at Kong/Extreme Router, set HR model to MiMo-V2.5 Pro.
-11. Only then: extra visual floors inside a company, extra templates, high-risk process isolation.
+1. Dual-screen shell + lobby directory + 1F intake wizard.
+1. Team room canvas + vacant/occupied desks + sprite states.
+1. Bottom-screen dossier, model dropdown, approve/pause.
+1. Event log + Kanban + approvals APIs and UI drawers.
+1. HR staffing: request -> policy/budget -> hire/reuse -> desk + capabilities + avatar.
+1. SSE live updates and mock-to-live router client.
+1. One digital-products template end-to-end: research -> spec -> draft -> QA -> marketing assets -> gated publish request.
+1. Tests, traces, metrics, README, `feature_list.json` pass flags.
+1. NFP integration: import `nixosModules.default`, point `routerEndpoint` at Kong/Extreme Router, set HR model to MiMo-V2.5 Pro.
+1. Only then: extra visual floors inside a company, extra templates, high-risk process isolation.
 
 ---
 

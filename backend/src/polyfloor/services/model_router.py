@@ -74,9 +74,7 @@ def _mock_catalog(default_hr_model: str) -> dict[str, list[dict[str, Any]]]:
         entry = _format_model(m)
         grouped[entry["tier"]].append(entry)
     # Ensure the configured HR model is present and marked reasoning-tier.
-    if not any(
-        m["id"] == default_hr_model for grp in grouped.values() for m in grp
-    ):
+    if not any(m["id"] == default_hr_model for grp in grouped.values() for m in grp):
         grouped["reasoning"].append(
             _format_model({"id": default_hr_model, "owned_by": "configured", "context": 131072})
         )

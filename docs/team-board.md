@@ -9,26 +9,26 @@ BACKLOG → READY → IN_PROGRESS → REVIEW → AWAITING_APPROVAL → DONE
 
 ### Status Descriptions
 
-| Status | Meaning |
-| --- | --- |
-| `BACKLOG` | Not yet prioritized |
-| `READY` | Ready for work, assigned to a team |
-| `IN_PROGRESS` | Actively being worked on |
-| `REVIEW` | Complete, in QA review |
+| Status              | Meaning                                              |
+| ------------------- | ---------------------------------------------------- |
+| `BACKLOG`           | Not yet prioritized                                  |
+| `READY`             | Ready for work, assigned to a team                   |
+| `IN_PROGRESS`       | Actively being worked on                             |
+| `REVIEW`            | Complete, in QA review                               |
 | `AWAITING_APPROVAL` | Passed QA; awaiting a human/CEO gate (spend/publish) |
-| `DONE` | Approved and delivered |
-| `BLOCKED` | Stuck (dependency, policy, capacity) |
+| `DONE`              | Approved and delivered                               |
+| `BLOCKED`           | Stuck (dependency, policy, capacity)                 |
 
 ### Valid Transitions
 
-| From | To |
-| --- | --- |
-| `BACKLOG` | `READY` |
-| `READY` | `IN_PROGRESS`, `BLOCKED` |
-| `IN_PROGRESS` | `REVIEW`, `BLOCKED` |
-| `REVIEW` | `AWAITING_APPROVAL`, `IN_PROGRESS` (QA fail) |
-| `AWAITING_APPROVAL` | `DONE`, `IN_PROGRESS` (rejected) |
-| `BLOCKED` | `READY` |
+| From                | To                                           |
+| ------------------- | -------------------------------------------- |
+| `BACKLOG`           | `READY`                                      |
+| `READY`             | `IN_PROGRESS`, `BLOCKED`                     |
+| `IN_PROGRESS`       | `REVIEW`, `BLOCKED`                          |
+| `REVIEW`            | `AWAITING_APPROVAL`, `IN_PROGRESS` (QA fail) |
+| `AWAITING_APPROVAL` | `DONE`, `IN_PROGRESS` (rejected)             |
+| `BLOCKED`           | `READY`                                      |
 
 Transitions are validated server-side.
 

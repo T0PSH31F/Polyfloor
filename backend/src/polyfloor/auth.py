@@ -74,7 +74,9 @@ def principal(request: Request, company_id: str | None = Query(default=None)) ->
     """Resolve a :class:`Principal` (used by action dispatch)."""
     _check_bearer(request)
     cid = company_id or request.headers.get("X-Company-Id")
-    return Principal(actor=request.headers.get("X-Actor", "user"), company_id=cid, is_platform=False)
+    return Principal(
+        actor=request.headers.get("X-Actor", "user"), company_id=cid, is_platform=False
+    )
 
 
 # Compatibility shim for any legacy imports.

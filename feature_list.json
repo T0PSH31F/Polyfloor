@@ -18,7 +18,10 @@
       "category": "assets",
       "title": "16x16 orthogonal pixel art tileset and character sprites",
       "description": "Staged 16x16 LimeZu Modern Interiors master sheets and character spritesheets in frontend/static/assets/.",
-      "acceptance_criteria": ["interiors.png present", "characters directory contains role sprites"],
+      "acceptance_criteria": [
+        "interiors.png present",
+        "characters directory contains role sprites"
+      ],
       "passes": true
     },
     {
@@ -26,7 +29,10 @@
       "category": "frontend",
       "title": "Dual-screen layout shell",
       "description": "SvelteKit layout rendering Top Screen (320x240 canvas, pixelated) and Bottom Screen (Poketch console).",
-      "acceptance_criteria": ["renders top + bottom screens", "nearest-neighbor pixelated scaling active"],
+      "acceptance_criteria": [
+        "renders top + bottom screens",
+        "nearest-neighbor pixelated scaling active"
+      ],
       "passes": true,
       "note": "Frontend SPA built and served by the backend; 60fps is a target, not benchmarked in sandbox."
     },
@@ -35,7 +41,10 @@
       "category": "frontend",
       "title": "1F Reception onboarding wizard",
       "description": "Interactive multiple-choice questionnaire with 4 grilling intensity tiers; creates a company tenant.",
-      "acceptance_criteria": ["allows naming company", "selects initial team presets"],
+      "acceptance_criteria": [
+        "allows naming company",
+        "selects initial team presets"
+      ],
       "passes": true
     },
     {
@@ -43,7 +52,11 @@
       "category": "backend",
       "title": "SSE company state event bus",
       "description": "FastAPI endpoint streaming agent/task/approval deltas via SSE, scoped per company_id.",
-      "acceptance_criteria": ["GET /api/events yields text/event-stream", "subscribers only receive their own company's events", "heartbeat every ~25s"],
+      "acceptance_criteria": [
+        "GET /api/events yields text/event-stream",
+        "subscribers only receive their own company's events",
+        "heartbeat every ~25s"
+      ],
       "passes": true,
       "verified": "pytest test_event_bus passes"
     },
@@ -52,7 +65,11 @@
       "category": "backend",
       "title": "Kanban DAG & WIP persistence",
       "description": "SQLite schema for append-only event log, Kanban/task DAG with WIP limits, artifacts, approvals (SPEC §9.4).",
-      "acceptance_criteria": ["append-only signed events", "WIP limit enforcement (default 3 IN_PROGRESS per team)", "over-capacity does not auto-spawn workers"],
+      "acceptance_criteria": [
+        "append-only signed events",
+        "WIP limit enforcement (default 3 IN_PROGRESS per team)",
+        "over-capacity does not auto-spawn workers"
+      ],
       "passes": true,
       "verified": "pytest test_wip passes"
     },
@@ -61,7 +78,11 @@
       "category": "agents",
       "title": "HR coordinator provisioning",
       "description": "HR Coordinator creates/assigns/pauses/retires workers, assigns desks, models, token budgets, and capabilities after policy/budget checks.",
-      "acceptance_criteria": ["request_hire -> PENDING approval -> execute_hire creates worker", "desk occupancy updates in state stream", "token budget bounds checked"],
+      "acceptance_criteria": [
+        "request_hire -> PENDING approval -> execute_hire creates worker",
+        "desk occupancy updates in state stream",
+        "token budget bounds checked"
+      ],
       "passes": true,
       "verified": "pytest test_hr passes"
     },
@@ -70,7 +91,12 @@
       "category": "nix",
       "title": "Hardened NixOS service module",
       "description": "services.polyfloor NixOS module with DynamicUser and systemd security sandboxing; nixosModules.default importable downstream.",
-      "acceptance_criteria": ["DynamicUser = true", "ProtectSystem=strict, ProtectHome, PrivateTmp, NoNewPrivileges", "nixosModules.default importable in downstream flakes", "exposes routerEndpoint, defaultHrModel, staticDir (SPEC §11)"],
+      "acceptance_criteria": [
+        "DynamicUser = true",
+        "ProtectSystem=strict, ProtectHome, PrivateTmp, NoNewPrivileges",
+        "nixosModules.default importable in downstream flakes",
+        "exposes routerEndpoint, defaultHrModel, staticDir (SPEC §11)"
+      ],
       "passes": false,
       "verified": "Hardening options (DynamicUser, ProtectSystem=strict, ProtectHome, PrivateTmp, NoNewPrivileges, etc.) and routerEndpoint/defaultHrModel/staticDir options are present and verified by inspection. Downstream importability + full nix eval are pending CI (no nix in sandbox)."
     },
@@ -79,7 +105,11 @@
       "category": "backend",
       "title": "OpenAI-compatible model router",
       "description": "Model router client to POLYFLOOR_ROUTER_ENDPOINT (Kong/Extreme Router/LiteLLM /v1). GET /api/models enumerates and groups free|fast|reasoning|frontier; PUT /api/agents/{id}/model changes an agent's model at runtime.",
-      "acceptance_criteria": ["GET /api/models returns grouped catalog with _source live|mock", "mock fallback includes mimo-v2.5-pro", "PUT /api/agents/{id}/model is company-scoped (404 if not in company)"],
+      "acceptance_criteria": [
+        "GET /api/models returns grouped catalog with _source live|mock",
+        "mock fallback includes mimo-v2.5-pro",
+        "PUT /api/agents/{id}/model is company-scoped (404 if not in company)"
+      ],
       "passes": true,
       "verified": "pytest test_model_router passes"
     },
@@ -88,7 +118,11 @@
       "category": "backend",
       "title": "Dynamic avatar composer",
       "description": "backend/assets/avatar_composer.py (Pillow) composes per-agent avatars from allowlisted LimeZu generator parts with a deterministic company/agent seed; rejects arbitrary paths/URLs; role->staged fallback.",
-      "acceptance_criteria": ["deterministic recipe per agent", "tenant path isolation", "invalid ids / size mismatch rejected"],
+      "acceptance_criteria": [
+        "deterministic recipe per agent",
+        "tenant path isolation",
+        "invalid ids / size mismatch rejected"
+      ],
       "passes": true,
       "verified": "pytest test_avatar passes"
     },
@@ -97,7 +131,10 @@
       "category": "backend",
       "title": "Digital-products bootstrap pipeline",
       "description": "Creating a company materializes CEO + HR + c-suite + team leads + rooms + desks + the gated research->spec->draft->QA->marketing->publish pipeline + a publish approval.",
-      "acceptance_criteria": ["POST /api/companies creates a full tenant", "digital-products template wires the production line"],
+      "acceptance_criteria": [
+        "POST /api/companies creates a full tenant",
+        "digital-products template wires the production line"
+      ],
       "passes": true,
       "verified": "pytest test_bootstrap passes"
     },
@@ -106,7 +143,10 @@
       "category": "backend",
       "title": "Tenant isolation tests",
       "description": "company_id on every record; queries/writes filter by company_id; two companies cannot see each other's data.",
-      "acceptance_criteria": ["cross-company access returns nothing / 404", "every object in /state snapshot carries company_id"],
+      "acceptance_criteria": [
+        "cross-company access returns nothing / 404",
+        "every object in /state snapshot carries company_id"
+      ],
       "passes": true,
       "verified": "pytest test_isolation passes"
     },
@@ -115,7 +155,10 @@
       "category": "backend",
       "title": "Observability endpoints",
       "description": "GET /healthz -> {status: ok}; GET /metrics -> Prometheus text; structured logs with company_id, trace_id, task_id, agent_id.",
-      "acceptance_criteria": ["/healthz returns ok", "/metrics returns prometheus text"],
+      "acceptance_criteria": [
+        "/healthz returns ok",
+        "/metrics returns prometheus text"
+      ],
       "passes": true,
       "verified": "routers/health.py + observability.py present; exercised via test_api"
     },
@@ -124,7 +167,11 @@
       "category": "nix",
       "title": "NFP integration (import flake module)",
       "description": "NFP layers/70-agents/76-orchestrators/polyfloor.nix imports inputs.polyfloor.nixosModules.default, points routerEndpoint at the NFP LLM router, sets defaultHrModel=mimo-v2.5-pro, and wires sops environmentFile.",
-      "acceptance_criteria": ["imports flake module (not vendored fetchFromGitHub)", "routerEndpoint points at Kong/Extreme Router/LiteLLM /v1", "secrets via sops only"],
+      "acceptance_criteria": [
+        "imports flake module (not vendored fetchFromGitHub)",
+        "routerEndpoint points at Kong/Extreme Router/LiteLLM /v1",
+        "secrets via sops only"
+      ],
       "passes": true,
       "verified": "module rewritten; not nix-evaluated in this sandbox. /v1/models enumerable via 78-llm-routers Kong route."
     }

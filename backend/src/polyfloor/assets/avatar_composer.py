@@ -89,9 +89,7 @@ def compose_avatar(
     layer_root = assets.parent / "limezu" if assets.exists() else None
     if layer_root and layer_root.exists():
         try:
-            return _compose_from_layers(
-                company_id, agent_id, layer_root, _seed, size
-            )
+            return _compose_from_layers(company_id, agent_id, layer_root, _seed, size)
         except Exception as exc:  # pragma: no cover
             logger.warning("avatar_composer.layer_failed", error=str(exc))
 
@@ -125,9 +123,7 @@ def _compose_from_layers(
     return f"/api/companies/{company_id}/avatars/{agent_id}.png"
 
 
-def _fallback_sprite(
-    company_id: str, agent_id: str, role: str, assets: Path
-) -> str:
+def _fallback_sprite(company_id: str, agent_id: str, role: str, assets: Path) -> str:
     """Use a staged character sprite. Copy into the company workspace for isolation."""
     sprite_name = ROLE_FALLBACK.get(role, "dev.png")
     src = assets / sprite_name

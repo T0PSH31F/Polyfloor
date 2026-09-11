@@ -85,18 +85,18 @@ nix profile install github:T0PSH31F/Polyfloor
 
 ### Module options
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enable` | bool | `false` | Enable the Polyfloor systemd service. |
-| `package` | package | *(backend, built from source)* | The Polyfloor package to run. The default builds the **backend only** (API + SPA-if-`staticDir`-set). `packages.frontend` exists but needs a real `npmDepsHash` before it builds. To serve the SPA, set `staticDir` (or `POLYFLOOR_STATIC_DIR`) to a built frontend. |
-| `host` | str | `127.0.0.1` | Bind address. Loopback by default; put a reverse proxy in front for remote access. |
-| `port` | port | `8080` | Backend HTTP port. (`nix run` uses `8001`.) |
-| `dataDir` | path | `/var/lib/polyfloor` | Persistent state root; per-company workspaces live under `companies/<company_id>/`. |
-| `openFirewall` | bool | `false` | Open the HTTP port in the firewall. |
-| `environmentFile` | path\|null | `null` | Path to an env file with secrets (sops). Never put secrets in the module config. |
-| `routerEndpoint` | str | `http://127.0.0.1:4000/v1` | OpenAI-compatible router base URL (must end in `/v1`). |
-| `defaultHrModel` | str | `mimo-v2.5-pro` | Default model id for the HR coordinator agent. |
-| `staticDir` | path\|null | `null` | Directory of the built frontend SPA to serve (used by `nix run`). |
+| Option            | Type    | Default                        | Description                                                                                                                                                                                                                                                          |
+| ----------------- | ------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enable`          | bool    | `false`                        | Enable the Polyfloor systemd service.                                                                                                                                                                                                                                |
+| `package`         | package | _(backend, built from source)_ | The Polyfloor package to run. The default builds the **backend only** (API + SPA-if-`staticDir`-set). `packages.frontend` exists but needs a real `npmDepsHash` before it builds. To serve the SPA, set `staticDir` (or `POLYFLOOR_STATIC_DIR`) to a built frontend. |
+| `host`            | str     | `127.0.0.1`                    | Bind address. Loopback by default; put a reverse proxy in front for remote access.                                                                                                                                                                                   |
+| `port`            | port    | `8080`                         | Backend HTTP port. (`nix run` uses `8001`.)                                                                                                                                                                                                                          |
+| `dataDir`         | path    | `/var/lib/polyfloor`           | Persistent state root; per-company workspaces live under `companies/<company_id>/`.                                                                                                                                                                                  |
+| `openFirewall`    | bool    | `false`                        | Open the HTTP port in the firewall.                                                                                                                                                                                                                                  |
+| `environmentFile` | path    | null                           | `null`                                                                                                                                                                                                                                                               | Path to an env file with secrets (sops). Never put secrets in the module config. |
+| `routerEndpoint`  | str     | `http://127.0.0.1:4000/v1`     | OpenAI-compatible router base URL (must end in `/v1`).                                                                                                                                                                                                               |
+| `defaultHrModel`  | str     | `mimo-v2.5-pro`                | Default model id for the HR coordinator agent.                                                                                                                                                                                                                       |
+| `staticDir`       | path    | null                           | `null`                                                                                                                                                                                                                                                               | Directory of the built frontend SPA to serve (used by `nix run`).                |
 
 The module is hardened: `DynamicUser`, `ProtectSystem=strict`, `ProtectHome`,
 `PrivateTmp`, `NoNewPrivileges`, `StateDirectory=polyfloor`, and a locked-down
@@ -203,7 +203,7 @@ MVP. See [`SPEC_POLYFLOOR.md`](./SPEC_POLYFLOOR.md) §4 and
 
 ## Assets — LimeZu Modern Interiors (license note)
 
-Polyfloor uses the **LimeZu *Modern Interiors* / *Modern Exteriors* 16×16**
+Polyfloor uses the **LimeZu _Modern Interiors_ / _Modern Exteriors_ 16×16**
 tilesets and character sprites only. 32×32 and 48×48 assets are **not** used.
 
 These assets are **not bundled** in this repository. They are staged at build

@@ -39,9 +39,7 @@ async def advance_task(
         raise LookupError(f"task {task_id} not found in company {ctx.company_id}")
 
     if task.status in ("BACKLOG", "READY"):
-        task = await repo.transition_task(
-            session, ctx, task_id, "IN_PROGRESS", wip_limit=wip_limit
-        )
+        task = await repo.transition_task(session, ctx, task_id, "IN_PROGRESS", wip_limit=wip_limit)
         await event_bus.publish(
             ctx,
             "task.started",
@@ -64,7 +62,7 @@ async def advance_task(
                 uri=f"polyfloor://companies/{ctx.company_id}/tasks/{task_id}/artifact",
                 content_hash=_hash(content),
                 review_status="PENDING",
-            )
+            ),
         )
         task.artifact_id = artifact.id
         session.add(task)
@@ -104,9 +102,7 @@ async def advance_task(
     return task
 
 
-async def _find_child(
-    session: AsyncSession, ctx: CompanyContext, parent: Task
-) -> Task | None:
+async def _find_child(session: AsyncSession, ctx: CompanyContext, parent: Task) -> Task | None:
     """Return the task whose parent is this one (next pipeline stage)."""
     tasks = await repo.list_tasks(session, ctx)
     for t in tasks:

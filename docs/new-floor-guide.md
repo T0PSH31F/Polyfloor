@@ -7,14 +7,14 @@ is always `company_id`).
 
 ## 1. Pick a template
 
-| Template | Default teams | Hard gates |
-| --- | --- | --- |
-| Digital products *(MVP reference)* | R&D, product/writing, creative, marketing, distribution, customer ops | Marketplace publish, paid assets |
-| Freelance agency | Intake/sales, delivery, QA, client success, finance | Client send, deadline change |
-| E-commerce / dropship | Research, supplier ops, storefront, creative, marketing, support | Purchase, ad spend, listing, refund |
-| Creator / influencer | Strategy, production, editing, distribution, community | Public post, sponsor reply |
-| Investment research | Research, risk, data, compliance | Any trade/execution stays human-approved |
-| CAD / 3D assets | Design, production, rendering, QA, marketplace | Publish, paid compute |
+| Template                           | Default teams                                                         | Hard gates                               |
+| ---------------------------------- | --------------------------------------------------------------------- | ---------------------------------------- |
+| Digital products _(MVP reference)_ | R&D, product/writing, creative, marketing, distribution, customer ops | Marketplace publish, paid assets         |
+| Freelance agency                   | Intake/sales, delivery, QA, client success, finance                   | Client send, deadline change             |
+| E-commerce / dropship              | Research, supplier ops, storefront, creative, marketing, support      | Purchase, ad spend, listing, refund      |
+| Creator / influencer               | Strategy, production, editing, distribution, community                | Public post, sponsor reply               |
+| Investment research                | Research, risk, data, compliance                                      | Any trade/execution stays human-approved |
+| CAD / 3D assets                    | Design, production, rendering, QA, marketplace                        | Publish, paid compute                    |
 
 Custom/oddball prompts still produce a template-like org: goal, teams,
 policies, model routes, WIP, required capabilities.

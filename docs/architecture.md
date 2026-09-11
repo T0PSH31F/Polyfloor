@@ -21,13 +21,13 @@ See [`../SPEC_POLYFLOOR.md`](../SPEC_POLYFLOOR.md) §1–4 (canonical) and
 
 ## Static vs Runtime Configuration
 
-| Layer | Managed By | Examples |
-| --- | --- | --- |
-| **Static (Nix)** | `nixos-rebuild switch` | Service enablement, host/port, `dataDir`, `routerEndpoint`, `defaultHrModel`, firewall, persistence |
-| **Runtime (DB/API)** | HR/admin agents via API | Companies, teams, agents, tasks, events, artifacts, approvals, model selection |
+| Layer                | Managed By              | Examples                                                                                            |
+| -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
+| **Static (Nix)**     | `nixos-rebuild switch`  | Service enablement, host/port, `dataDir`, `routerEndpoint`, `defaultHrModel`, firewall, persistence |
+| **Runtime (DB/API)** | HR/admin agents via API | Companies, teams, agents, tasks, events, artifacts, approvals, model selection                      |
 
-The static layer defines *how the service runs*. The runtime layer defines *what
-work happens*, scoped per `company_id`. Agents modify runtime state without
+The static layer defines _how the service runs_. The runtime layer defines _what
+work happens_, scoped per `company_id`. Agents modify runtime state without
 NixOS rebuilds.
 
 ## Data Flow
@@ -47,9 +47,9 @@ Four systems, never collapsed into one chat log:
 
 1. **Append-only event log** — audit trail (requests, decisions, errors,
    staffing, policy).
-2. **Kanban / task DAG** — execution: owner, status, criteria, budget, retries.
-3. **Artifact registry** — what was produced: URI, hash, lineage, review status.
-4. **Approval queue** — human/CEO gates: spend, hire, publish, irreversible I/O.
+1. **Kanban / task DAG** — execution: owner, status, criteria, budget, retries.
+1. **Artifact registry** — what was produced: URI, hash, lineage, review status.
+1. **Approval queue** — human/CEO gates: spend, hire, publish, irreversible I/O.
 
 Task lifecycle:
 `BACKLOG → READY → IN_PROGRESS → REVIEW → AWAITING_APPROVAL → DONE` (+ `BLOCKED`).

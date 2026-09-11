@@ -176,21 +176,28 @@ export function drawFloorTiles(
 }
 
 /** Draw a wall border around the screen. */
-export function drawWalls(
-  ctx: CanvasRenderingContext2D,
-  scale: number,
-): void {
+export function drawWalls(ctx: CanvasRenderingContext2D, scale: number): void {
   ctx.imageSmoothingEnabled = false;
   const wallThick = TILE;
   ctx.fillStyle = PALETTE.wall;
   // Top wall
   ctx.fillRect(0, 0, VIEW_W * scale, wallThick * scale);
   // Bottom wall
-  ctx.fillRect(0, (VIEW_H - wallThick) * scale, VIEW_W * scale, wallThick * scale);
+  ctx.fillRect(
+    0,
+    (VIEW_H - wallThick) * scale,
+    VIEW_W * scale,
+    wallThick * scale,
+  );
   // Left wall
   ctx.fillRect(0, 0, wallThick * scale, VIEW_H * scale);
   // Right wall
-  ctx.fillRect((VIEW_W - wallThick) * scale, 0, wallThick * scale, VIEW_H * scale);
+  ctx.fillRect(
+    (VIEW_W - wallThick) * scale,
+    0,
+    wallThick * scale,
+    VIEW_H * scale,
+  );
   // Wall top highlight
   ctx.fillStyle = PALETTE.wallTop;
   ctx.fillRect(0, 0, VIEW_W * scale, 2 * scale);
@@ -366,9 +373,7 @@ export function computeLobbyLayout(
     const getSortKey = (r: Room) => {
       const suffix = r.id.split("_").slice(-1)[0];
       const fullSuffix = r.id.split("_").slice(1).join("_");
-      const idx = ROOM_TYPES_ORDER.indexOf(
-        fullSuffix || suffix,
-      );
+      const idx = ROOM_TYPES_ORDER.indexOf(fullSuffix || suffix);
       return idx === -1 ? 99 : idx;
     };
     return getSortKey(a) - getSortKey(b);
@@ -427,14 +432,38 @@ export function drawLobby(
   drawWalls(ctx, scale);
 
   // Header area
-  drawText(ctx, companyName.toUpperCase().slice(0, 24), 20, 20, scale, PALETTE.accent, 8);
+  drawText(
+    ctx,
+    companyName.toUpperCase().slice(0, 24),
+    20,
+    20,
+    scale,
+    PALETTE.accent,
+    8,
+  );
   if (goal) {
     drawText(ctx, goal.slice(0, 40), 20, 34, scale, PALETTE.textDim, 6);
   }
 
   // KPI badges
-  drawBadge(ctx, "AGT", String(metrics.activeAgents), 200, 20, scale, PALETTE.green);
-  drawBadge(ctx, "APR", String(metrics.pendingApprovals), 260, 20, scale, PALETTE.yellow);
+  drawBadge(
+    ctx,
+    "AGT",
+    String(metrics.activeAgents),
+    200,
+    20,
+    scale,
+    PALETTE.green,
+  );
+  drawBadge(
+    ctx,
+    "APR",
+    String(metrics.pendingApprovals),
+    260,
+    20,
+    scale,
+    PALETTE.yellow,
+  );
 
   // Room tiles
   for (const rt of layout.rooms) {
@@ -462,9 +491,33 @@ function drawRoomTile(
   drawText(ctx, label, rt.x + 4, rt.y + 4, scale, PALETTE.text, 6);
 
   // Counts
-  drawText(ctx, `ACT:${rt.active}`, rt.x + 4, rt.y + 20, scale, PALETTE.green, 6);
-  drawText(ctx, `BLK:${rt.blocked}`, rt.x + 4, rt.y + 30, scale, PALETTE.red, 6);
-  drawText(ctx, `VAC:${rt.vacant}`, rt.x + 4, rt.y + 40, scale, PALETTE.textDim, 6);
+  drawText(
+    ctx,
+    `ACT:${rt.active}`,
+    rt.x + 4,
+    rt.y + 20,
+    scale,
+    PALETTE.green,
+    6,
+  );
+  drawText(
+    ctx,
+    `BLK:${rt.blocked}`,
+    rt.x + 4,
+    rt.y + 30,
+    scale,
+    PALETTE.red,
+    6,
+  );
+  drawText(
+    ctx,
+    `VAC:${rt.vacant}`,
+    rt.x + 4,
+    rt.y + 40,
+    scale,
+    PALETTE.textDim,
+    6,
+  );
 
   // Mini desk icons
   const deskIconY = rt.y + TILE * 2;
@@ -505,10 +558,7 @@ export interface RoomLayout {
 /**
  * Compute the team room layout from desks + agents.
  */
-export function computeRoomLayout(
-  desks: Desk[],
-  agents: Agent[],
-): RoomLayout {
+export function computeRoomLayout(desks: Desk[], agents: Agent[]): RoomLayout {
   // Desks are sorted by ordinal. Ordinal 0 = lead, 1-5 = workers.
   const sorted = [...desks].sort((a, b) => a.ordinal - b.ordinal);
   const leadDesk = sorted.find((d) => d.ordinal === 0) || sorted[0];
@@ -519,7 +569,7 @@ export function computeRoomLayout(
     : null;
 
   // Lead desk centered at top
-  const leadX = (VIEW_W / 2 - TILE) ; // center-ish
+  const leadX = VIEW_W / 2 - TILE; // center-ish
   const leadY = TILE * 3;
 
   // Worker desks in a row below
@@ -557,12 +607,33 @@ export function drawTeamRoom(
   drawWalls(ctx, scale);
 
   // Header
-  drawText(ctx, roomLabel.slice(0, 20).toUpperCase(), 20, 20, scale, PALETTE.accent, 8);
-  drawText(ctx, `WIP:${wip.in_progress}/${wip.limit}`, 200, 20, scale, PALETTE.yellow, 6);
+  drawText(
+    ctx,
+    roomLabel.slice(0, 20).toUpperCase(),
+    20,
+    20,
+    scale,
+    PALETTE.accent,
+    8,
+  );
+  drawText(
+    ctx,
+    `WIP:${wip.in_progress}/${wip.limit}`,
+    200,
+    20,
+    scale,
+    PALETTE.yellow,
+    6,
+  );
 
   // Lead desk (larger)
   if (layout.leadDesk.agent) {
-    drawDesk(ctx, layout.leadDesk.x / TILE, layout.leadDesk.y / TILE - 1, scale);
+    drawDesk(
+      ctx,
+      layout.leadDesk.x / TILE,
+      layout.leadDesk.y / TILE - 1,
+      scale,
+    );
     drawCharacter(
       ctx,
       layout.leadDesk.x / TILE,
@@ -573,8 +644,21 @@ export function drawTeamRoom(
       layout.leadDesk.agent.state === "working",
     );
   } else {
-    drawVacantDesk(ctx, layout.leadDesk.x / TILE, layout.leadDesk.y / TILE - 1, scale);
-    drawText(ctx, "LEAD", layout.leadDesk.x / TILE, layout.leadDesk.y / TILE, scale, PALETTE.textDim, 6);
+    drawVacantDesk(
+      ctx,
+      layout.leadDesk.x / TILE,
+      layout.leadDesk.y / TILE - 1,
+      scale,
+    );
+    drawText(
+      ctx,
+      "LEAD",
+      layout.leadDesk.x / TILE,
+      layout.leadDesk.y / TILE,
+      scale,
+      PALETTE.textDim,
+      6,
+    );
   }
 
   // Worker desks
@@ -592,7 +676,15 @@ export function drawTeamRoom(
       );
     } else {
       drawVacantDesk(ctx, wd.x / TILE, wd.y / TILE - 1, scale);
-      drawText(ctx, "VACANT", wd.x / TILE, wd.y / TILE, scale, PALETTE.textDim, 6);
+      drawText(
+        ctx,
+        "VACANT",
+        wd.x / TILE,
+        wd.y / TILE,
+        scale,
+        PALETTE.textDim,
+        6,
+      );
     }
   }
 }

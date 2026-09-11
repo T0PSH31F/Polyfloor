@@ -13,11 +13,11 @@ router.
 
 ## Configuration
 
-| Setting | Env var | Default | Notes |
-| --- | --- | --- | --- |
-| Router base URL | `POLYFLOOR_ROUTER_ENDPOINT` | `http://127.0.0.1:4000/v1` | Must end in `/v1`. Set via `services.polyfloor.routerEndpoint`. |
-| Router API key | `POLYFLOOR_ROUTER_API_KEY_FILE` | *(none)* | Path to a file containing the key. Never the raw value; never logged. |
-| Default HR model | `POLYFLOOR_DEFAULT_HR_MODEL` | `mimo-v2.5-pro` | Xiaomi MiMo-V2.5 Pro. Set via `services.polyfloor.defaultHrModel`. |
+| Setting          | Env var                         | Default                    | Notes                                                                 |
+| ---------------- | ------------------------------- | -------------------------- | --------------------------------------------------------------------- |
+| Router base URL  | `POLYFLOOR_ROUTER_ENDPOINT`     | `http://127.0.0.1:4000/v1` | Must end in `/v1`. Set via `services.polyfloor.routerEndpoint`.       |
+| Router API key   | `POLYFLOOR_ROUTER_API_KEY_FILE` | _(none)_                   | Path to a file containing the key. Never the raw value; never logged. |
+| Default HR model | `POLYFLOOR_DEFAULT_HR_MODEL`    | `mimo-v2.5-pro`            | Xiaomi MiMo-V2.5 Pro. Set via `services.polyfloor.defaultHrModel`.    |
 
 Workers default to the free/fast pool models; the HR coordinator uses
 `defaultHrModel`.

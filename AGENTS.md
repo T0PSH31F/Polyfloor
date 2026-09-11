@@ -60,17 +60,20 @@ The frozen API contract lives at [`docs/API_CONTRACT.md`](./docs/API_CONTRACT.md
 ## Core Commandments & Invariants
 
 1. **Strict 16×16 orthogonal pixel art:**
+
    - All environment tiles and character sprites adhere to a 16×16 grid (or
      standard multi-tile 16×32 bust frames).
-   - No 32×32/48×48 assets in the main canvas game loop. LimeZu *Modern
-     Interiors* 16×16 only.
+   - No 32×32/48×48 assets in the main canvas game loop. LimeZu _Modern
+     Interiors_ 16×16 only.
 
-2. **Zero heavy engine dependencies:**
+1. **Zero heavy engine dependencies:**
+
    - HTML5 2D Canvas API + Svelte DOM overlays only.
    - Do NOT add Phaser, Three.js, Pixi.js, or heavy WebGL libraries unless
      explicitly instructed.
 
-3. **Company is the tenant, not the floor:**
+1. **Company is the tenant, not the floor:**
+
    - Every request, event, task, artifact, trace, and secret lookup requires
      `company_id`. A missing company id is a bug, not a default.
    - The OLD department-per-floor model (R&D on 4F, marketing on 3F, HR on 2F as
@@ -78,18 +81,21 @@ The frozen API contract lives at [`docs/API_CONTRACT.md`](./docs/API_CONTRACT.md
    - Floors are visual/layout containers inside a company, never isolation
      boundaries.
 
-4. **Nix hermetism & formatting:**
+1. **Nix hermetism & formatting:**
+
    - All Nix changes must evaluate cleanly via `nix flake check`.
    - Code formatting must pass `nix fmt -- --check`.
 
-5. **Feature backlog synchronization:**
+1. **Feature backlog synchronization:**
+
    - Every completed task must be verified against `feature_list.json` and
      updated to `"passes": true` — but never mark anything true that is not
      actually done. Use the `"verified"` note field when something exists but
      could not be exercised in the current sandbox.
    - Document key decisions and commits in `agent-progress.md`.
 
-6. **Security & secrets:**
+1. **Security & secrets:**
+
    - Never commit API keys, tokens, or plaintext secrets.
    - Secrets are read from **file paths** (`*_FILE`), never from env vars, and
      never logged. Use `sops-nix` / `environmentFile`.
@@ -122,12 +128,12 @@ nix fmt          # Format everything
 When starting or resuming a session:
 
 1. Run `./init.sh` to check tool availability, staged assets, and uncompleted tasks.
-2. Read `SPEC_POLYFLOOR.md` (canonical) and the last 3 entries in
+1. Read `SPEC_POLYFLOOR.md` (canonical) and the last 3 entries in
    `agent-progress.md` to understand recent work and decisions.
-3. Inspect `feature_list.json` and pick the highest-priority item where
+1. Inspect `feature_list.json` and pick the highest-priority item where
    `"passes": false`.
-4. Implement the feature following the project invariants (company-as-tenant,
+1. Implement the feature following the project invariants (company-as-tenant,
    16×16 assets, no heavy engines).
-5. Run `just check` (or `just test` + `ruff` when Nix is unavailable) to verify.
-6. Commit changes, log progress in `agent-progress.md`, and set `"passes": true`
+1. Run `just check` (or `just test` + `ruff` when Nix is unavailable) to verify.
+1. Commit changes, log progress in `agent-progress.md`, and set `"passes": true`
    for the completed feature ID in `feature_list.json` — honestly.

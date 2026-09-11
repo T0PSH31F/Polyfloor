@@ -77,15 +77,7 @@ export interface Team {
 
 // --- Agent ---
 export type AgentRole =
-  | "ceo"
-  | "hr"
-  | "cfo"
-  | "cto"
-  | "coo"
-  | "cho"
-  | "lead"
-  | "worker"
-  | "qa";
+  "ceo" | "hr" | "cfo" | "cto" | "coo" | "cho" | "lead" | "worker" | "qa";
 
 export type AgentState = "idle" | "working" | "paused" | "retired";
 
