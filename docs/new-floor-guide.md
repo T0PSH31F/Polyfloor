@@ -1,72 +1,50 @@
-# Adding a New Floor
+# Company Templates
 
-## 1. Create a Nix Template
+Polyfloor does not hardcode the same departments into every company. Intake
+selects a **template**; HR materializes the org graph for that tenant. A
+**company is the tenant** — templates are about org shape, not isolation (which
+is always `company_id`).
 
-Create `floors/templates/<name>.nix`:
+## 1. Pick a template
 
-```nix
-{ config, lib, ... }:
-with lib;
-{
-  tower.floors.<name> = {
-    enable        = true;
-    displayName   = "My Floor";
-    email         = "<name>@polyfloor.local";
-    orgName       = "<name>";
-    timezone      = "America/Los_Angeles";
-    targetMachine = "luffy";
-    dbSchema      = "floor_<name>";
-    template      = "<template-type>";
+| Template | Default teams | Hard gates |
+| --- | --- | --- |
+| Digital products *(MVP reference)* | R&D, product/writing, creative, marketing, distribution, customer ops | Marketplace publish, paid assets |
+| Freelance agency | Intake/sales, delivery, QA, client success, finance | Client send, deadline change |
+| E-commerce / dropship | Research, supplier ops, storefront, creative, marketing, support | Purchase, ad spend, listing, refund |
+| Creator / influencer | Strategy, production, editing, distribution, community | Public post, sponsor reply |
+| Investment research | Research, risk, data, compliance | Any trade/execution stays human-approved |
+| CAD / 3D assets | Design, production, rendering, QA, marketplace | Publish, paid compute |
 
-    roles = {
-      lead = {
-        model       = "free://best-reasoning";
-        description = "Floor lead";
-      };
-      worker = {
-        model       = "free://best-fast";
-        description = "Floor worker";
-      };
-    };
+Custom/oddball prompts still produce a template-like org: goal, teams,
+policies, model routes, WIP, required capabilities.
 
-    dailyBudgetUSD = 0.0;
-    persistPaths   = [ "outputs" "sessions" "sprint-board" ];
-  };
-}
-```
+## 2. Create the company
 
-## 2. Register in flake-module.nix
-
-Add to `flake.clan.modules`:
-
-```nix
-floor-<name> = ./floors/templates/<name>.nix;
-```
-
-## 3. Run Database Migration
-
-The floor configuration is stored in `tower.floor_configs`. Insert via API or directly:
-
-```sql
-INSERT INTO tower.floor_configs (id, display_name, org_name, db_schema, template)
-VALUES ('<name>', 'My Floor', '<name>', 'floor_<name>', '<template-type>');
-```
-
-## 4. Configure Roles via API
+Via the 1F intake wizard, or directly:
 
 ```bash
-curl -X PUT http://127.0.0.1:8001/api/v1/floors/<name>/roles/lead \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "free://best-reasoning", "description": "Floor lead"}'
+curl -X POST http://127.0.0.1:8001/api/companies \
+  -H 'Content-Type: application/json' \
+  -d '{ "name": "Lumin Press", "goal": "Ship a digital product", "template_id": "digital-products" }'
 ```
 
-## 5. Set Up Output Directory
+Creating a company materializes the CEO, HR, C-suite, team leads, rooms, desks,
+and the gated research → spec → draft → QA → marketing → publish pipeline, plus
+a publish approval. See [`API_CONTRACT.md`](./API_CONTRACT.md).
 
-The output service automatically creates `<output_root>/<floor_id>/outputs/` on first write.
+## 3. Add teams / workers via HR
 
-## 6. Test
+Team leads **request** specialists; they never spawn agents or grant tools
+directly. HR creates workers after policy/budget checks:
 
 ```bash
-curl http://127.0.0.1:8001/api/v1/floors/<name>
+# request_hire -> PENDING approval
+# execute_hire -> HR creates the worker (see API_CONTRACT.md Actions)
 ```
+
+## 4. Multi-floor growth inside one company
+
+If a company outgrows one lobby, keep the same `company_id` and add
+`company_floors` with color-coded tabs. Never put two companies on one visual
+floor. See SPEC §3.4.

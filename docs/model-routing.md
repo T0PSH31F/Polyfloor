@@ -1,53 +1,42 @@
 # Model Routing
 
-## Design Philosophy
+## Design
 
-Free-first: use the best free models available through ExtremeRouter by default. Paid models are optional and require explicit opt-in at both the global and floor level.
+Polyfloor talks to any **OpenAI-compatible** router: Kong, Extreme Router,
+LiteLLM, or a raw OpenAI gateway. The router must expose:
 
-## Routing Priority
+- `GET {routerEndpoint}/models` — model discovery (Polyfloor calls this).
+- `POST {routerEndpoint}/chat/completions` — agent inference.
 
-1. **Local Hermes/Ollama** — `hermes:<model>` for local execution
-1. **ExtremeRouter free models** — `free://best-reasoning`, `free://best-fast` (default)
-1. **Paid models** — `paid://gpt-4o` (requires `POLYFLOOR_ALLOW_PAID_MODELS=true` AND floor `paid_models_allowed=true`)
-
-## Logical Aliases
-
-| Alias                   | Purpose                    | Default Resolution                                         |
-| ----------------------- | -------------------------- | ---------------------------------------------------------- |
-| `free://best-reasoning` | Complex analysis, planning | Configurable via `POLYFLOOR_EXTREMEROUTER_REASONING_MODEL` |
-| `free://best-fast`      | Quick tasks, responses     | Configurable via `POLYFLOOR_EXTREMEROUTER_FAST_MODEL`      |
-| `free://best-code`      | Code generation            | Configurable via `POLYFLOOR_EXTREMEROUTER_CODE_MODEL`      |
-
-Aliases are configurable — they map to model IDs via environment variables.
+Polyfloor never hardcodes the catalog in the UI; it always enumerates the live
+router.
 
 ## Configuration
 
-```bash
-# ExtremeRouter
-POLYFLOOR_EXTREMEROUTER_BASE_URL=https://router.extreme.ai/v1
-POLYFLOOR_EXTREMEROUTER_API_KEY_FILE=/path/to/key
-POLYFLOOR_EXTREMEROUTER_REASONING_MODEL=qwen-2.5-72b
-POLYFLOOR_EXTREMEROUTER_FAST_MODEL=llama-3.1-8b
+| Setting | Env var | Default | Notes |
+| --- | --- | --- | --- |
+| Router base URL | `POLYFLOOR_ROUTER_ENDPOINT` | `http://127.0.0.1:4000/v1` | Must end in `/v1`. Set via `services.polyfloor.routerEndpoint`. |
+| Router API key | `POLYFLOOR_ROUTER_API_KEY_FILE` | *(none)* | Path to a file containing the key. Never the raw value; never logged. |
+| Default HR model | `POLYFLOOR_DEFAULT_HR_MODEL` | `mimo-v2.5-pro` | Xiaomi MiMo-V2.5 Pro. Set via `services.polyfloor.defaultHrModel`. |
 
-# Local Hermes
-POLYFLOOR_HERMES_BASE_URL=http://127.0.0.1:11434/v1
-POLYFLOOR_HERMES_MODEL=hermes3
+Workers default to the free/fast pool models; the HR coordinator uses
+`defaultHrModel`.
 
-# Policy
-POLYFLOOR_ALLOW_PAID_MODELS=false
-POLYFLOOR_PAID_DAILY_BUDGET_USD=0
-```
+## API surface
 
-## Per-Floor Configuration
+- `GET /api/models` — enumerates the router's models, groups them as
+  `free`, `fast`, `reasoning`, `frontier`, and returns
+  `{ id, owned_by, tier, context, pricing }` per model plus a `_source` of
+  `live` or `mock`. When the router is unreachable, a mock fallback catalog
+  (including `mimo-v2.5-pro`) is returned so the UI keeps working.
+- `PUT /api/agents/{agent_id}/model?company_id=...` — change an agent's model at
+  runtime, scoped to that company (404 if the agent is not in that company).
 
-Each floor can configure:
+## Tiers
 
-- Default model per role
-- Whether paid models are allowed
-- Daily budget cap
+Polyfloor groups models into four tiers for the UI: `free`, `fast`,
+`reasoning`, `frontier`. The HR orchestrator model defaults to
+`mimo-v2.5-pro` (reasoning tier). Spend is tracked per company/team/model via
+`agent_runs` (SPEC §9.5).
 
-These are set via the API and stored in `tower.floor_configs` and `tower.roles`.
-
-## Error Handling
-
-If a paid model is requested but not allowed, the router raises a clear error explaining which gate failed (global or floor-level).
+See [`API_CONTRACT.md`](./API_CONTRACT.md) and SPEC §9.2.

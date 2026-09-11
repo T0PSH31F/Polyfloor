@@ -1,66 +1,73 @@
 # Deployment
 
-## NixOS Module Usage
+## NixOS module
 
 Import the Polyfloor module into your NixOS configuration:
 
 ```nix
-# In your flake.nix
-inputs.polyfloor.url = "github:T0PSH31F/polyfloor";
+{
+  inputs.polyfloor.url = "github:T0PSH31F/Polyfloor";
 
-# In your NixOS configuration
-{ inputs, ... }: {
-  imports = [ inputs.polyfloor.nixosModules.polyfloor ];
+  imports = [ inputs.polyfloor.nixosModules.default ];
 
-  tower = {
+  services.polyfloor = {
     enable = true;
+    package = inputs.polyfloor.packages.${system}.default;
+    host = "127.0.0.1";
+    port = 8001;
     dataDir = "/var/lib/polyfloor";
-    backend = {
-      enable = true;
-      host = "127.0.0.1";
-      port = 8001;
-    };
+    routerEndpoint = "http://127.0.0.1:4000/v1"; # Kong / Extreme Router / LiteLLM
+    defaultHrModel = "mimo-v2.5-pro";
+    environmentFile = config.sops.secrets.polyfloor-env.path;
   };
 }
 ```
 
-## Database Setup
+`nixosModules.default` is `modules/nixos/polyfloor.nix` — a hardened systemd
+service (`DynamicUser`, `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`,
+`NoNewPrivileges`, `StateDirectory=polyfloor`).
 
-Polyfloor uses an existing PostgreSQL instance. It does not manage PostgreSQL itself.
-
-1. Create the database and user:
-
-```sql
-CREATE USER polyfloor WITH PASSWORD '<secure-password>';
-CREATE DATABASE polyfloor OWNER polyfloor;
-```
-
-2. Run migrations:
+## Quick run (no NixOS config)
 
 ```bash
-psql -U polyfloor -d polyfloor -f db/migrations/001_tower_core.sql
+nix run github:T0PSH31F/Polyfloor         # backend :8001 + served SPA
+nix profile install github:T0PSH31F/Polyfloor
 ```
 
-## Secrets
+## Database
 
-Use SOPS + age for secret management:
+Polyfloor uses **SQLite WAL** by default so a fresh run needs zero external
+services. For PostgreSQL, set `POLYFLOOR_DATABASE_URL` in the environment file:
+
+```
+POLYFLOOR_DATABASE_URL=postgresql://polyfloor:<password>@localhost:5432/polyfloor
+```
+
+## Secrets (sops)
+
+Never put secrets in the module config or env vars. Use a sops-managed
+`environmentFile`:
 
 ```nix
-tower.backend.environmentFile = config.sops.secrets.polyfloor-env.path;
+services.polyfloor.environmentFile = config.sops.secrets.polyfloor-env.path;
 ```
 
-Example `.env` file (encrypted with SOPS):
+The env file may contain:
 
 ```
-POLYFLOOR_DATABASE_DSN=postgresql://polyfloor:<password>@localhost:5432/polyfloor
-POLYFLOOR_API_TOKEN=<secure-token>
-POLYFLOOR_EXTREMEROUTER_API_KEY=<api-key>
+POLYFLOOR_ROUTER_API_KEY_FILE=/run/secrets/polyfloor-router-key
+POLYFLOOR_API_TOKEN_FILE=/run/secrets/polyfloor-api-token
+POLYFLOOR_DATABASE_URL=postgresql://polyfloor:<password>@localhost:5432/polyfloor
 ```
 
-## Health Check
+Secrets are read from **file paths** (`*_FILE`) so they never appear in the
+process environment or logs.
+
+## Health check
 
 ```bash
-curl http://127.0.0.1:8001/healthz
+curl http://127.0.0.1:8001/healthz   # → {"status":"ok"}
+curl http://127.0.0.1:8001/metrics  # → Prometheus text
 ```
 
 ## Persistence
@@ -72,3 +79,8 @@ environment.persistence."/persist".directories = [
   { directory = "/var/lib/polyfloor"; user = "polyfloor"; group = "polyfloor"; mode = "0750"; }
 ];
 ```
+
+## Reverse proxy
+
+The backend binds to `127.0.0.1` by default. Put a reverse proxy (Caddy, nginx)
+with TLS and auth in front for remote access; do not expose the API directly.
