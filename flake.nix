@@ -55,9 +55,12 @@
           programs.mdformat.enable = true;
         };
 
+        # NOTE: we do NOT enable the git-hooks treefmt hook here. It uses a
+        # different treefmt version than treefmt-nix's `checks.treefmt` and the
+        # two fight over .md formatting. `checks.treefmt` is the single source
+        # of truth for formatting.
         pre-commit = {
           check.enable = true;
-          settings.hooks.treefmt.enable = true;
         };
 
         packages = {
