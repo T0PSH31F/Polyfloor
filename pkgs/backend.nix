@@ -1,4 +1,7 @@
-{ lib, python3Packages }:
+{
+  lib,
+  python3Packages,
+}:
 
 python3Packages.buildPythonPackage {
   pname = "polyfloor-backend";
@@ -16,19 +19,20 @@ python3Packages.buildPythonPackage {
     uvicorn
     pydantic
     pydantic-settings
-    asyncpg
     sqlmodel
     aiosqlite
-    alembic
+    sqlalchemy
     httpx
     sse-starlette
     structlog
+    prometheus-client
+    pillow
   ];
 
   doCheck = false;
 
   meta = with lib; {
-    description = "Polyfloor FastAPI backend service";
+    description = "Polyfloor FastAPI backend — autonomous multi-company enterprise engine";
     homepage = "https://github.com/T0PSH31F/Polyfloor";
     license = licenses.mit;
     mainProgram = "polyfloor";

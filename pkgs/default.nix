@@ -1,4 +1,9 @@
-{ lib, stdenv, polyfloor-backend, polyfloor-frontend, makeWrapper }:
+{
+  lib,
+  stdenv,
+  polyfloor-backend,
+  makeWrapper,
+}:
 
 stdenv.mkDerivation {
   pname = "polyfloor";
@@ -12,17 +17,15 @@ stdenv.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    mkdir -p $out/bin $out/share/polyfloor/frontend
-    if [ -d "${polyfloor-frontend}" ]; then
-      cp -r ${polyfloor-frontend}/* $out/share/polyfloor/frontend/
-    fi
+    mkdir -p $out/bin
     makeWrapper ${polyfloor-backend}/bin/polyfloor $out/bin/polyfloor \
-      --set POLYFLOOR_STATIC_DIR "$out/share/polyfloor/frontend"
+      --set-default POLYFLOOR_HOST 127.0.0.1 \
+      --set-default POLYFLOOR_PORT 8080
     runHook postInstall
   '';
 
   meta = with lib; {
-    description = "Polyfloor complete package (backend daemon + Svelte frontend)";
+    description = "Polyfloor — autonomous multi-company enterprise engine (backend daemon)";
     homepage = "https://github.com/T0PSH31F/Polyfloor";
     license = licenses.mit;
     mainProgram = "polyfloor";

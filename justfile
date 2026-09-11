@@ -1,59 +1,64 @@
-# Polyfloor — Task runner
+# Polyfloor — task runner
 
-# Format all code
+# Format all code (requires Nix)
 fmt:
-    nix fmt
+	nix fmt
 
 format: fmt
 
-# Lint all code
+# Lint backend + frontend (no Nix required)
 lint:
-    cd backend && ruff check src/ tests/
-    cd backend && mypy src/polyfloor
-    cd frontend && npx svelte-check --tsconfig ./tsconfig.json
+	cd backend && ruff check src/ tests/
+	cd frontend && npx svelte-check --tsconfig ./tsconfig.json
 
-# Run all tests
+# Run all tests (no Nix required)
 test: backend-test frontend-test
 
 # Run backend tests
 backend-test:
-    cd backend && python -m pytest tests/ -v --tb=short
+	cd backend && uv run python -m pytest tests/ -v --tb=short
 
 # Run frontend tests
 frontend-test:
-    cd frontend && npx vitest run
+	cd frontend && npx vitest run
 
-# Run all checks (format check + lint + test + nix eval)
+# Full check WITHOUT nix (sandbox/CI-friendly): lint + tests + svelte-check
+check-local:
+	cd backend && ruff check src/ tests/
+	cd backend && uv run python -m pytest tests/ -v --tb=short -x
+	cd frontend && npx svelte-check --tsconfig ./tsconfig.json
+	cd frontend && npm run build
+
+# Full check WITH nix (format check + lint + tests + nix flake check)
 check:
-    nix fmt -- --check
-    cd backend && ruff check src/ tests/
-    cd backend && python -m pytest tests/ -v --tb=short -x
-    cd frontend && npx svelte-check --tsconfig ./tsconfig.json
-    nix flake check --no-build
+	nix fmt -- --check
+	cd backend && ruff check src/ tests/
+	cd backend && uv run python -m pytest tests/ -v --tb=short -x
+	cd frontend && npx svelte-check --tsconfig ./tsconfig.json
+	nix flake check --no-build
 
-# Nix flake check
+# Nix flake check only
 nix-check:
-    nix flake check --no-build
+	nix flake check --no-build
 
-# Run dev servers
-dev: dev-backend
+# Run dev servers (backend :8001 + frontend :5173, proxied)
+dev:
+	@echo "Starting backend (http://127.0.0.1:8001) and frontend (http://127.0.0.1:5173)..."
+	@cd backend && uv run uvicorn polyfloor.main:app --reload --host 127.0.0.1 --port 8001 &
+	@cd frontend && npm run dev
 
-# Run backend dev server
+# Run backend dev server only
 dev-backend:
-    cd backend && uv run uvicorn polyfloor.main:app --reload --host 127.0.0.1 --port 8001
+	cd backend && uv run uvicorn polyfloor.main:app --reload --host 127.0.0.1 --port 8001
 
-# Run frontend dev server
+# Run frontend dev server only
 dev-frontend:
-    cd frontend && npm run dev
-
-# Run database migration
-db-migrate:
-    psql "${POLYFLOOR_DATABASE_DSN:-postgresql://polyfloor@localhost:5432/polyfloor}" -f db/migrations/001_tower_core.sql
+	cd frontend && npm run dev
 
 # Install frontend dependencies
 frontend-install:
-    cd frontend && npm install
+	cd frontend && npm install
 
 # Install backend dependencies
 backend-install:
-    cd backend && uv sync
+	cd backend && uv sync --extra dev

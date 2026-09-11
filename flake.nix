@@ -65,7 +65,6 @@
           frontend = pkgs.callPackage ./pkgs/frontend.nix { };
           default = pkgs.callPackage ./pkgs/default.nix {
             polyfloor-backend = self'.packages.backend;
-            polyfloor-frontend = self'.packages.frontend;
           };
         };
 
@@ -75,6 +74,7 @@
             nodejs_22
             pnpm
             python312
+            python312Packages.uv
             python312Packages.fastapi
             python312Packages.uvicorn
             python312Packages.pytest
@@ -86,7 +86,6 @@
             jq
             sops
             age
-            clan-core.packages.${system}.clan-cli
           ];
           shellHook = ''
             ${config.pre-commit.installationScript}

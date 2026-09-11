@@ -1,4 +1,7 @@
-{ lib, buildNpmPackage }:
+{
+  lib,
+  buildNpmPackage,
+}:
 
 buildNpmPackage {
   pname = "polyfloor-frontend";
@@ -6,7 +9,9 @@ buildNpmPackage {
 
   src = ../frontend;
 
-  npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  # NOTE: regenerate with `nix build .#frontend` after changing package-lock.json,
+  # then `prefetch-npm-deps ./frontend/package-lock.json` and paste the hash here.
+  npmDepsHash = lib.fakeHash;
 
   buildPhase = ''
     runHook preBuild
@@ -17,12 +22,12 @@ buildNpmPackage {
   installPhase = ''
     runHook preInstall
     mkdir -p $out
-    cp -r build/* $out/ 2>/dev/null || cp -r .svelte-kit/output/* $out/ 2>/dev/null || cp -r dist/* $out/ 2>/dev/null || cp -r * $out/
+    cp -r build/* $out/
     runHook postInstall
   '';
 
   meta = with lib; {
-    description = "Polyfloor SvelteKit/Vite frontend UI";
+    description = "Polyfloor SvelteKit GBA/DS dual-screen frontend";
     homepage = "https://github.com/T0PSH31F/Polyfloor";
     license = licenses.mit;
   };
