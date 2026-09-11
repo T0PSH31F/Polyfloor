@@ -11,7 +11,7 @@ buildNpmPackage {
 
   # NOTE: regenerate with `nix build .#frontend` after changing package-lock.json,
   # then `prefetch-npm-deps ./frontend/package-lock.json` and paste the hash here.
-  npmDepsHash = lib.fakeHash;
+  npmDepsHash = "sha256-WER4Rq6jgbfA2iBTBvH2y9jCvLtp5emwr2XATdJP144=";
 
   buildPhase = ''
     runHook preBuild
