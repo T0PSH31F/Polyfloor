@@ -4,7 +4,7 @@
 }:
 
 python3Packages.buildPythonPackage {
-  pname = "polyfloor-backend";
+  pname = "polyfloor";
   version = "0.1.0";
   pyproject = true;
 
