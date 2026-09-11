@@ -74,7 +74,7 @@
             nodejs_22
             pnpm
             python312
-            python312Packages.uv
+            uv
             python312Packages.fastapi
             python312Packages.uvicorn
             python312Packages.pytest

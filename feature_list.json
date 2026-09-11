@@ -9,9 +9,9 @@
       "title": "Hermetic flake-parts setup with devShell and treefmt",
       "description": "flake.nix evaluates cleanly, exposes devShells, treefmt checks, NixOS module, and packages (backend/frontend/default).",
       "acceptance_criteria": ["nix flake check passes", "nix fmt works"],
-      "passes": true,
+      "passes": false,
       "verified": "unverified-no-nix-in-sandbox",
-      "note": "Flake, pkgs, module, and treefmt config exist and are written; Nix could not be executed in this sandbox, so nix flake check / nix fmt are deferred to CI."
+      "note": "Flake, pkgs, module, and treefmt config exist and are written; Nix could not be executed in this sandbox, so nix flake check / nix fmt are deferred to CI. Do not treat as passing until CI is green."
     },
     {
       "id": "ASSET-01",
@@ -71,8 +71,8 @@
       "title": "Hardened NixOS service module",
       "description": "services.polyfloor NixOS module with DynamicUser and systemd security sandboxing; nixosModules.default importable downstream.",
       "acceptance_criteria": ["DynamicUser = true", "ProtectSystem=strict, ProtectHome, PrivateTmp, NoNewPrivileges", "nixosModules.default importable in downstream flakes", "exposes routerEndpoint, defaultHrModel, staticDir (SPEC §11)"],
-      "passes": true,
-      "verified": "module exists and is hardened; nixosModules.default wired in modules/flake-module.nix. Not nix-evaluated in this sandbox."
+      "passes": false,
+      "verified": "Hardening options (DynamicUser, ProtectSystem=strict, ProtectHome, PrivateTmp, NoNewPrivileges, etc.) and routerEndpoint/defaultHrModel/staticDir options are present and verified by inspection. Downstream importability + full nix eval are pending CI (no nix in sandbox)."
     },
     {
       "id": "ROUTER-01",
