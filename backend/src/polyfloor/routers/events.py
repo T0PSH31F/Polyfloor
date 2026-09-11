@@ -1,75 +1,51 @@
-"""Event stream endpoint using Server-Sent Events."""
+"""Server-Sent Events stream — company-scoped deltas only.
+
+A subscriber for company A never receives company B's events. The frontend
+reconnects on disconnect. See SPEC §8.5.
+"""
 
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import json
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from sse_starlette.sse import EventSourceResponse
 
-from ..auth import Principal, require_floor_access, require_scope
+from ..auth import company_context
+from ..db.models import CompanyContext
+from ..observability import SSE_CLIENTS
+from ..services.event_bus import event_bus
 
 router = APIRouter(tags=["events"])
 
 
-class EventBus:
-    """Simple in-process pub/sub for SSE event streaming."""
-
-    def __init__(self):
-        self._subscribers: dict[str, list[asyncio.Queue]] = {}
-
-    def subscribe(self, floor_id: str) -> asyncio.Queue:
-        q: asyncio.Queue = asyncio.Queue(maxsize=100)
-        self._subscribers.setdefault(floor_id, []).append(q)
-        return q
-
-    def unsubscribe(self, floor_id: str, q: asyncio.Queue):
-        subs = self._subscribers.get(floor_id, [])
-        if q in subs:
-            subs.remove(q)
-
-    async def publish(self, floor_id: str, event: dict[str, Any]):
-        for q in self._subscribers.get(floor_id, []):
-            with contextlib.suppress(asyncio.QueueFull):
-                q.put_nowait(event)
-
-    async def publish_global(self, event: dict[str, Any]):
-        for floor_id in list(self._subscribers.keys()):
-            await self.publish(floor_id, event)
-
-
-# Module-level event bus instance
-event_bus = EventBus()
-
-
-@router.get("/events/stream")
+@router.get("/events")
 async def stream_events(
-    floor_id: str | None = Query(None, description="Filter events by floor ID"),
-    principal: Principal = Depends(require_scope("events:read")),
+    company_id: str = Depends(company_context),
+    _last_id: str | None = Query(default=None, alias="last_event_id"),
 ):
-    """SSE endpoint for real-time event streaming."""
-    if floor_id:
-        require_floor_access(floor_id, principal)
+    """SSE endpoint streaming company-scoped state deltas."""
+    ctx: CompanyContext = company_id  # type: ignore[assignment]
+    SSE_CLIENTS.labels(company_id=ctx.company_id).inc()
+    queue = event_bus.subscribe(ctx.company_id)
 
     async def event_generator():
-        q = event_bus.subscribe(floor_id or "__global__")
         try:
             while True:
                 try:
-                    event = await asyncio.wait_for(q.get(), timeout=30)
+                    event = await asyncio.wait_for(queue.get(), timeout=25.0)
                     yield {
                         "event": event.get("event_type", "message"),
-                        "data": json.dumps(event),
+                        "data": json.dumps(event, default=str),
                         "id": str(event.get("id", "")),
                     }
                 except TimeoutError:
                     yield {"event": "heartbeat", "data": "{}"}
-                except asyncio.CancelledError:
-                    break
+        except asyncio.CancelledError:
+            pass
         finally:
-            event_bus.unsubscribe(floor_id or "__global__", q)
+            event_bus.unsubscribe(ctx.company_id, queue)
+            SSE_CLIENTS.labels(company_id=ctx.company_id).dec()
 
     return EventSourceResponse(event_generator())

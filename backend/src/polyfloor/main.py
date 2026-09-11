@@ -1,7 +1,14 @@
-"""Polyfloor FastAPI application entry point."""
+"""Polyfloor FastAPI application entry point.
+
+Mounts all routers under ``/api`` (and ``/`` for health/metrics), serves the
+built frontend SPA from ``POLYFLOOR_STATIC_DIR`` when present (``nix run``), and
+runs the SQLite WAL database on startup.
+"""
 
 from __future__ import annotations
 
+import json
+import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -10,51 +17,31 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
-from .db import close_pool, get_pool, init_db
-from .floors import validate_floors_directory
-from .routers import approvals, events, floors, health, tasks
+from .db import close_engine, get_engine, init_db
+from .routers import actions, companies, events, health, models
 
 logger = structlog.get_logger()
 
 
-def _parse_origins(raw: str) -> list[str]:
-    """Parse comma-separated CORS origins."""
-    return [o.strip() for o in raw.split(",") if o.strip()]
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan: initialize SQLModel DB tables and validate floors."""
     settings = get_settings()
     logger.info("polyfloor.starting", host=settings.host, port=settings.port)
-
-    # Initialize SQLModel DB tables
     try:
         await init_db()
-        logger.info("polyfloor.sqlmodel_initialized")
-    except Exception as e:
-        logger.warning("polyfloor.sqlmodel_init_failed", error=str(e))
-
-    # Validate floors directory at startup if present
-    floors_dir = Path(__file__).resolve().parents[3] / "floors"
-    if floors_dir.exists():
-        try:
-            validated = validate_floors_directory(floors_dir)
-            logger.info("polyfloor.floors_validated", count=len(validated))
-        except Exception as e:
-            logger.error("polyfloor.floors_validation_failed", error=str(e))
-            raise
-
+        logger.info("polyfloor.db_initialized", url=settings.database_url)
+    except Exception as exc:  # pragma: no cover
+        logger.error("polyfloor.db_init_failed", error=str(exc))
     try:
-        await get_pool()
-        logger.info("polyfloor.db_connected")
-    except Exception as e:
-        logger.warning("polyfloor.db_unavailable", error=str(e))
-
+        get_engine()
+    except Exception:  # pragma: no cover
+        pass
     yield
-    await close_pool()
+    await close_engine()
     logger.info("polyfloor.stopped")
 
 
@@ -64,38 +51,62 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="Polyfloor",
-        description="Multi-floor AI company OS — Tower API",
+        description="Autonomous multi-company enterprise engine with a GBA/DS department-store UI.",
         version="0.1.0",
         lifespan=lifespan,
     )
 
-    # CORS
-    origins = _parse_origins(settings.security.allowed_origins)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=settings.cors_origins(),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "X-Company-Id", "X-Actor", "X-Trace-Id"],
     )
 
-    # Request ID middleware
     @app.middleware("http")
-    async def add_request_id(request: Request, call_next):
-        import uuid
-
+    async def add_request_id(request: Request, call_next):  # type: ignore[no-untyped-def]
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         structlog.contextvars.bind_contextvars(request_id=request_id)
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         return response
 
-    # Routers
+    @app.exception_handler(Exception)
+    async def unhandled(request: Request, exc: Exception):  # type: ignore[no-untyped-def]
+        logger.error("polyfloor.unhandled_error", error=str(exc), path=request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "internal_error", "detail": str(exc)},
+        )
+
+    # API routers.
     app.include_router(health.router)
-    app.include_router(floors.router, prefix="/api/v1")
-    app.include_router(tasks.router, prefix="/api/v1")
-    app.include_router(approvals.router, prefix="/api/v1")
-    app.include_router(events.router, prefix="/api/v1")
+    app.include_router(companies.router, prefix="/api")
+    app.include_router(models.router, prefix="/api")
+    app.include_router(events.router, prefix="/api")
+    app.include_router(actions.router, prefix="/api")
+
+    # Serve the built frontend SPA when a static dir is configured (nix run).
+    static_dir = settings.static_dir
+    if static_dir and Path(static_dir).is_dir():
+        index_path = Path(static_dir) / "index.html"
+
+        app.mount(
+            "/assets",
+            StaticFiles(directory=Path(static_dir) / "assets"),
+            name="assets",
+        )
+
+        @app.get("/{path:path}")
+        async def spa(path: str):  # type: ignore[no-untyped-def]
+            # Don't shadow API routes.
+            if path.startswith("api") or path.startswith("healthz") or path.startswith("metrics"):
+                return JSONResponse({"error": "not found"}, status_code=404)
+            candidate = Path(static_dir) / path
+            if candidate.is_file():
+                return FileResponse(candidate)
+            return FileResponse(index_path)
 
     return app
 
@@ -103,14 +114,13 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
-def cli():
-    """CLI entry point for uvicorn."""
+def cli() -> None:
+    """CLI entry point for ``polyfloor`` / ``nix run``."""
     settings = get_settings()
     uvicorn.run(
         "polyfloor.main:app",
         host=settings.host,
         port=settings.port,
-        reload=False,
         log_level=settings.log_level,
     )
 

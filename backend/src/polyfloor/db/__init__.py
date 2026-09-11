@@ -1,42 +1,64 @@
-"""Database connection and SQLModel persistence management."""
+"""Database engine, session management, and schema initialization.
+
+SQLite (WAL mode) is the default so a fresh ``nix run`` works with zero external
+services. The engine is async via ``aiosqlite``.
+"""
 
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
-import asyncpg
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
-from .models import ApiAuditLog, ApiToken, Approval, FloorEvent, Task  # noqa: F401
+from .models import ALL_MODELS  # noqa: F401  (registers tables on metadata)
 
-_pool: asyncpg.Pool | None = None
+
 _engine: AsyncEngine | None = None
 _session_factory: sessionmaker | None = None
 
-DEFAULT_SQLITE_URL = "sqlite+aiosqlite:///polyfloor.db"
+
+def _build_engine(db_url: str) -> AsyncEngine:
+    """Create an async engine. Enable SQLite WAL + foreign keys."""
+    connect_args: dict = {}
+    if db_url.startswith("sqlite"):
+        connect_args = {"check_same_thread": False}
+    engine = create_async_engine(db_url, echo=False, future=True, connect_args=connect_args)
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _sqlite_pragma(dbapi_conn, _):  # type: ignore[no-untyped-def]
+        if db_url.startswith("sqlite"):
+            cur = dbapi_conn.cursor()
+            cur.execute("PRAGMA journal_mode=WAL")
+            cur.execute("PRAGMA foreign_keys=ON")
+            cur.close()
+
+    return engine
 
 
 def get_engine(db_url: str | None = None) -> AsyncEngine:
-    """Get or create the SQLAlchemy/SQLModel async engine."""
+    """Get or create the async engine (cached)."""
     global _engine, _session_factory
     if _engine is None:
-        url = db_url or DEFAULT_SQLITE_URL
-        _engine = create_async_engine(url, echo=False, future=True)
+        from ..config import get_settings
+
+        url = db_url or get_settings().database_url
+        _engine = _build_engine(url)
         _session_factory = sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
     return _engine
 
 
 async def init_db(db_url: str | None = None) -> None:
-    """Initialize SQLModel database tables."""
+    """Create all tables. Idempotent."""
     engine = get_engine(db_url)
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency for obtaining an AsyncSession."""
+    """FastAPI dependency yielding an async session."""
     global _session_factory
     if _session_factory is None:
         get_engine()
@@ -45,39 +67,23 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_pool() -> asyncpg.Pool:
-    """Get or create the asyncpg connection pool."""
-    global _pool
-    if _pool is None:
-        from ..config import get_settings
-
-        settings = get_settings()
-        _pool = await asyncpg.create_pool(
-            dsn=settings.database.dsn,
-            min_size=settings.database.pool_min,
-            max_size=settings.database.pool_max,
-        )
-    return _pool
-
-
-async def close_pool() -> None:
-    """Close the asyncpg connection pool and SQLModel engine."""
-    global _pool, _engine
-    if _pool is not None:
-        await _pool.close()
-        _pool = None
+async def close_engine() -> None:
+    """Dispose the engine (shutdown)."""
+    global _engine, _session_factory
     if _engine is not None:
         await _engine.dispose()
-        _engine = None
+    _engine = None
+    _session_factory = None
 
 
-async def get_connection() -> asyncpg.Connection:
-    """Get a connection from the pool (for dependency injection)."""
-    pool = await get_pool()
-    return await pool.acquire()
+# Backwards-compatible aliases used by older scaffold code paths.
+close_pool = close_engine
 
 
-async def release_connection(conn: asyncpg.Connection) -> None:
-    """Release a connection back to the pool."""
-    pool = await get_pool()
-    await pool.release(conn)
+async def get_pool() -> AsyncEngine:  # noqa: D401
+    """Return the engine (legacy alias)."""
+    return get_engine()
+
+
+async def close_pool_legacy() -> None:  # pragma: no cover
+    await close_engine()

@@ -1,224 +1,82 @@
-"""Bearer token authentication and role-based authorization with DB backing."""
+"""Authentication and company-context extraction.
+
+For the OSS MVP, access is scoped by ``company_id`` carried via the
+``X-Company-Id`` header (or ``?company_id=`` query param). An optional platform
+bearer token (``POLYFLOOR_API_TOKEN_FILE``) gates the whole API in production.
+
+Every request resolves to a :class:`CompanyContext`; endpoints that lack one
+return 400. See SPEC §4 (Isolation).
+"""
 
 from __future__ import annotations
 
-import hashlib
 import hmac
-import json
-from datetime import UTC, datetime
-from enum import StrEnum
+from dataclasses import dataclass
 
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from fastapi import HTTPException, Query, Request, status
 
-from .config import Settings, get_settings
-from .db import get_engine
-from .db.models import ApiAuditLog, ApiToken
-
-security_scheme = HTTPBearer(auto_error=False)
+from .config import get_settings
+from .db.models import CompanyContext
 
 
-class PrincipalRole(StrEnum):
-    """Authorization roles for API principals."""
-
-    HUMAN_ADMIN = "human_admin"
-    HR = "hr"
-    ORCHESTRATOR = "orchestrator"
-    WORKER = "worker"
-    READONLY = "readonly"
-
-
-ROLE_SCOPES: dict[PrincipalRole, set[str]] = {
-    PrincipalRole.HUMAN_ADMIN: {
-        "floors:read",
-        "floors:write",
-        "roles:read",
-        "roles:write",
-        "tasks:read",
-        "tasks:write",
-        "approvals:read",
-        "approvals:create",
-        "approvals:resolve",
-        "sprints:read",
-        "sprints:write",
-        "events:read",
-        "config:write",
-    },
-    PrincipalRole.HR: {
-        "floors:read",
-        "floors:write",
-        "roles:read",
-        "roles:write",
-        "tasks:read",
-        "tasks:write",
-        "approvals:read",
-        "approvals:create",
-        "approvals:resolve",
-        "sprints:read",
-        "sprints:write",
-        "events:read",
-        "config:write",
-    },
-    PrincipalRole.ORCHESTRATOR: {
-        "floors:read",
-        "roles:read",
-        "tasks:read",
-        "tasks:write",
-        "approvals:read",
-        "approvals:create",
-        "sprints:read",
-        "sprints:write",
-        "events:read",
-    },
-    PrincipalRole.WORKER: {
-        "floors:read",
-        "roles:read",
-        "tasks:read",
-        "events:read",
-    },
-    PrincipalRole.READONLY: {
-        "floors:read",
-        "roles:read",
-        "tasks:read",
-        "approvals:read",
-        "sprints:read",
-        "events:read",
-    },
-}
-
-
+@dataclass
 class Principal:
-    """Authenticated API principal."""
+    """The actor behind a request."""
 
-    def __init__(
-        self,
-        role: PrincipalRole,
-        floor_scopes: set[str] | None = None,
-        token_id: int | None = None,
-    ):
-        self.role = role
-        self.floor_scopes = floor_scopes
-        self.token_id = token_id
-
-    def has_scope(self, scope: str) -> bool:
-        return scope in ROLE_SCOPES.get(self.role, set())
-
-    def can_access_floor(self, floor_id: str) -> bool:
-        if self.floor_scopes is None:
-            return True
-        return floor_id in self.floor_scopes
+    actor: str
+    company_id: str | None
+    is_platform: bool
 
 
-_DEV_PRINCIPAL = Principal(role=PrincipalRole.HUMAN_ADMIN)
+_security_cache: dict[str, str | None] = {}
 
 
-def _constant_time_compare(a: str, b: str) -> bool:
-    """Constant-time string comparison to prevent timing attacks."""
-    return hmac.compare_digest(a.encode(), b.encode())
+def _platform_token() -> str | None:
+    settings = get_settings()
+    if "token" not in _security_cache:
+        _security_cache["token"] = settings.api_token()
+    return _security_cache["token"]
 
 
-def hash_token(raw_token: str) -> str:
-    """Compute SHA-256 hash of API token."""
-    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+def _check_bearer(request: Request) -> None:
+    """If a platform token is configured, require a matching bearer token."""
+    expected = _platform_token()
+    if not expected:
+        return  # open in dev
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing bearer token")
+    token = auth.removeprefix("Bearer ").strip()
+    if not hmac.compare_digest(token, expected):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid bearer token")
 
 
-async def get_principal(
+def company_context(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
-    settings: Settings = Depends(get_settings),
-) -> Principal:
-    """Extract and validate the authenticated principal from DB or static settings."""
-    static_token = settings.security.get_api_token()
+    company_id: str | None = Query(default=None, description="Company tenant id"),
+) -> CompanyContext:
+    """Resolve a mandatory :class:`CompanyContext` from the request.
 
-    # If no credentials provided: check dev fallback
-    if credentials is None:
-        if static_token is None:
-            return _DEV_PRINCIPAL
+    Order: query param ``company_id`` -> ``X-Company-Id`` header.
+    """
+    _check_bearer(request)
+    cid = company_id or request.headers.get("X-Company-Id")
+    if not cid:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication token",
-            headers={"WWW-Authenticate": "Bearer"},
+            status.HTTP_400_BAD_REQUEST,
+            "company_id is required (query param or X-Company-Id header)",
         )
-
-    raw_token = credentials.credentials
-
-    # Check static token file fallback if configured
-    if static_token and _constant_time_compare(raw_token, static_token):
-        return Principal(role=PrincipalRole.HUMAN_ADMIN)
-
-    # Check database-backed tokens
-    token_h = hash_token(raw_token)
-    try:
-        engine = get_engine()
-        async with AsyncSession(engine) as session:
-            stmt = select(ApiToken).where(ApiToken.token_hash == token_h)
-            result = await session.execute(stmt)
-            token_record = result.scalar_one_or_none()
-
-            if token_record is not None:
-                if token_record.revoked:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Token has been revoked",
-                    )
-                if token_record.expires_at:
-                    exp = token_record.expires_at
-                    if exp.tzinfo is None:
-                        exp = exp.replace(tzinfo=UTC)
-                    if exp < datetime.now(UTC):
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Token has expired",
-                        )
-
-                scopes: set[str] | None = None
-                if token_record.floor_scopes_json:
-                    scopes = set(json.loads(token_record.floor_scopes_json))
-
-                role = PrincipalRole(token_record.role)
-                principal = Principal(role=role, floor_scopes=scopes, token_id=token_record.id)
-
-                # Audit log entry
-                audit = ApiAuditLog(
-                    token_id=token_record.id,
-                    principal_role=role.value,
-                    endpoint=request.url.path,
-                    method=request.method,
-                )
-                session.add(audit)
-                await session.commit()
-                return principal
-    except HTTPException:
-        raise
-    except Exception:
-        pass
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid authentication token",
-    )
+    actor = request.headers.get("X-Actor", "user")
+    return CompanyContext(cid, actor=actor, trace_id=request.headers.get("X-Trace-Id"))
 
 
-def require_scope(scope: str):
-    """Dependency that raises 403 if the principal lacks the given scope."""
-
-    async def _check(principal: Principal = Depends(get_principal)) -> Principal:
-        if not principal.has_scope(scope):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Insufficient permissions: requires scope '{scope}'",
-            )
-        return principal
-
-    return _check
+def principal(request: Request, company_id: str | None = Query(default=None)) -> Principal:
+    """Resolve a :class:`Principal` (used by action dispatch)."""
+    _check_bearer(request)
+    cid = company_id or request.headers.get("X-Company-Id")
+    return Principal(actor=request.headers.get("X-Actor", "user"), company_id=cid, is_platform=False)
 
 
-def require_floor_access(floor_id: str, principal: Principal) -> None:
-    """Raise 403 if the principal cannot access the given floor."""
-    if not principal.can_access_floor(floor_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access denied to floor '{floor_id}'",
-        )
+# Compatibility shim for any legacy imports.
+require_floor_access = None  # type: ignore[assignment]
+require_scope = None  # type: ignore[assignment]

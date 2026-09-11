@@ -1,123 +1,94 @@
-"""Event bus — in-process pub/sub with DB persistence for state-change events.
+"""In-process event bus keyed by ``company_id``.
 
-Publishes to the SSE event stream and persists events to durable storage.
+Events are persisted (append-only) and fanned out to SSE subscribers filtered by
+company. A subscriber for company A never receives company B's events.
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
-from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
+import structlog
 
 from ..db import get_engine
-from ..db.models import FloorEvent
+from ..db.models import CompanyContext, Event
+
+logger = structlog.get_logger()
 
 
 class EventBus:
-    """In-process event bus with async subscribers and SQLModel persistence."""
+    """Company-scoped async pub/sub with durable persistence."""
 
-    def __init__(self):
-        self._subscribers: dict[str, list[asyncio.Queue]] = {}
-        self._global_subscribers: list[asyncio.Queue] = []
-        self._handlers: list[Callable] = []
+    def __init__(self) -> None:
+        self._subscribers: dict[str, list[asyncio.Queue[dict[str, Any]]]] = {}
+        self._lock = asyncio.Lock()
 
-    def subscribe(self, floor_id: str | None = None) -> asyncio.Queue:
-        """Subscribe to events for a specific floor or globally."""
-        q: asyncio.Queue = asyncio.Queue(maxsize=200)
-        if floor_id:
-            self._subscribers.setdefault(floor_id, []).append(q)
-        else:
-            self._global_subscribers.append(q)
+    def subscribe(self, company_id: str) -> asyncio.Queue[dict[str, Any]]:
+        q: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=256)
+        self._subscribers.setdefault(company_id, []).append(q)
         return q
 
-    def unsubscribe(self, q: asyncio.Queue, floor_id: str | None = None):
-        """Remove a subscriber."""
-        if floor_id:
-            subs = self._subscribers.get(floor_id, [])
-            if q in subs:
-                subs.remove(q)
-        elif q in self._global_subscribers:
-            self._global_subscribers.remove(q)
-
-    async def _persist_event(
-        self, floor_id: str, event_type: str, payload: dict[str, Any], actor: str
-    ):
-        """Save event to database using SQLModel."""
-        try:
-            engine = get_engine()
-            async with AsyncSession(engine) as session:
-                record = FloorEvent(
-                    floor_id=floor_id,
-                    event_type=event_type,
-                    actor=actor,
-                    payload_json=json.dumps(payload),
-                )
-                session.add(record)
-                await session.commit()
-        except Exception:
-            # Prevent persistence failure from breaking pub/sub dispatch
-            pass
+    def unsubscribe(self, company_id: str, q: asyncio.Queue[dict[str, Any]]) -> None:
+        subs = self._subscribers.get(company_id, [])
+        if q in subs:
+            subs.remove(q)
 
     async def publish(
-        self, floor_id: str, event_type: str, payload: dict[str, Any], actor: str = "system"
-    ):
-        """Publish an event to floor-specific/global subscribers and persist to DB."""
-        event = {
-            "floor_id": floor_id,
+        self,
+        ctx: CompanyContext,
+        event_type: str,
+        payload: dict[str, Any],
+        *,
+        source_agent_id: str | None = None,
+        target_type: str = "system",
+        target_id: str | None = None,
+        correlation_id: str | None = None,
+        requires_approval: bool = False,
+    ) -> dict[str, Any]:
+        """Persist an event and fan it out to the company's subscribers."""
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        event = Event(
+            company_id=ctx.company_id,
+            source_agent_id=source_agent_id,
+            target_type=target_type,
+            target_id=target_id,
+            event_type=event_type,
+            correlation_id=correlation_id or ctx.trace_id,
+            payload_json=json.dumps(payload, default=str),
+            trace_id=ctx.trace_id,
+            requires_approval=requires_approval,
+        )
+        engine = get_engine()
+        try:
+            async with AsyncSession(engine) as session:
+                session.add(event)
+                await session.commit()
+                await session.refresh(event)
+        except Exception as exc:  # pragma: no cover
+            logger.error("event_bus.persist_failed", error=str(exc), company_id=ctx.company_id)
+
+        envelope = {
+            "id": event.id,
+            "company_id": ctx.company_id,
             "event_type": event_type,
+            "source_agent_id": source_agent_id,
+            "target_type": target_type,
+            "target_id": target_id,
+            "correlation_id": event.correlation_id,
             "payload": payload,
-            "actor": actor,
+            "trace_id": ctx.trace_id,
+            "requires_approval": requires_approval,
+            "created_at": event.created_at.isoformat() if event.created_at else None,
         }
-
-        # Persist event asynchronously
-        await self._persist_event(floor_id, event_type, payload, actor)
-
-        # Floor-specific subscribers
-        for q in self._subscribers.get(floor_id, []):
-            try:
-                q.put_nowait(event)
-            except asyncio.QueueFull:
-                try:
-                    q.get_nowait()
-                    q.put_nowait(event)
-                except (asyncio.QueueEmpty, asyncio.QueueFull):
-                    pass
-
-        # Global subscribers
-        for q in self._global_subscribers:
-            try:
-                q.put_nowait(event)
-            except asyncio.QueueFull:
-                try:
-                    q.get_nowait()
-                    q.put_nowait(event)
-                except (asyncio.QueueEmpty, asyncio.QueueFull):
-                    pass
-
-        # Registered handlers
-        import inspect
-
-        for handler in self._handlers:
-            try:
-                if inspect.iscoroutinefunction(handler):
-                    await handler(event)
-                else:
-                    handler(event)
-            except Exception:
-                pass
-
-    def add_handler(self, handler: Callable):
-        """Register an event handler."""
-        self._handlers.append(handler)
-
-    def remove_handler(self, handler: Callable):
-        """Unregister an event handler."""
-        if handler in self._handlers:
-            self._handlers.remove(handler)
+        for q in self._subscribers.get(ctx.company_id, []):
+            with contextlib.suppress(asyncio.QueueFull):
+                q.put_nowait(envelope)
+        return envelope
 
 
-# Module-level singleton
+# Module-level singleton.
 event_bus = EventBus()
