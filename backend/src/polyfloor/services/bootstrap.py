@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..assets.avatar_composer import compose_avatar
 from ..db.models import (
     Agent,
     Approval,
@@ -26,7 +27,6 @@ from ..db.models import (
     Team,
 )
 from . import repository as repo
-from ..assets.avatar_composer import compose_avatar
 
 # --------------------------------------------------------------------------- #
 # Template definitions

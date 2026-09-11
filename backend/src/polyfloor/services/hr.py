@@ -10,9 +10,9 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models import Agent, Approval, CompanyContext, Desk
-from . import repository as repo
 from ..assets.avatar_composer import compose_avatar
+from ..db.models import Agent, Approval, CompanyContext
+from . import repository as repo
 from .event_bus import event_bus
 
 

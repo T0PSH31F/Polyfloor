@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from polyfloor.db.models import CompanyContext
-from polyfloor.services import bootstrap, repository as repo
+from polyfloor.services import bootstrap
+from polyfloor.services import repository as repo
 
 
 async def test_bootstrap_creates_full_org(test_session):

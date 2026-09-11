@@ -25,7 +25,6 @@ from ..db.models import (
     CompanyFloor,
     Desk,
     Event,
-    Integration,
     Room,
     Task,
     Team,

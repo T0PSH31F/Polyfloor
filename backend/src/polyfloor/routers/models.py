@@ -45,5 +45,5 @@ async def update_agent_model(
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             f"agent {agent_id} not found in company {ctx.company_id}",
-        )
+        ) from None
     return {"agent": agent.model_dump()}

@@ -6,9 +6,6 @@ model list (mock); action dispatch; two companies isolated at the API layer.
 
 from __future__ import annotations
 
-import os
-
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 

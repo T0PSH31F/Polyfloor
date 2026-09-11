@@ -12,15 +12,15 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import company_context
+from ..agents.executor import advance_task
+from ..assets.avatar_composer import avatar_file_path, is_path_in_company
 from ..db import get_session
 from ..db.models import CompanyContext
-from ..services import bootstrap, repository as repo
-from ..assets.avatar_composer import avatar_file_path, is_path_in_company
-from ..services.event_bus import event_bus
-from ..services.hr import request_hire, execute_hire, retire_agent
-from ..agents.executor import advance_task
 from ..observability import update_company_metrics
+from ..services import bootstrap
+from ..services import repository as repo
+from ..services.event_bus import event_bus
+from ..services.hr import execute_hire, request_hire, retire_agent
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
@@ -102,7 +102,7 @@ async def company_state(
     try:
         snapshot = await repo.company_state(session, ctx)
     except LookupError:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "company not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "company not found") from None
     update_company_metrics(company_id, snapshot)
     return snapshot
 

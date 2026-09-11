@@ -15,7 +15,6 @@ from sqlmodel import SQLModel
 
 from .models import ALL_MODELS  # noqa: F401  (registers tables on metadata)
 
-
 _engine: AsyncEngine | None = None
 _session_factory: sessionmaker | None = None
 

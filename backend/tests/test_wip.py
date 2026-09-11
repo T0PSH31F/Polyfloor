@@ -5,7 +5,8 @@ from __future__ import annotations
 import pytest
 
 from polyfloor.db.models import CompanyContext, Task
-from polyfloor.services import bootstrap, repository as repo
+from polyfloor.services import bootstrap
+from polyfloor.services import repository as repo
 
 
 async def test_wip_limit_blocks_fourth_in_progress(test_session):

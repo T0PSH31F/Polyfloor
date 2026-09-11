@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from polyfloor.assets.avatar_composer import (
     _deterministic_seed,
     _seeded_rng,

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from polyfloor.db.models import CompanyContext, Task
-from polyfloor.services import bootstrap, repository as repo
+from polyfloor.db.models import CompanyContext
+from polyfloor.services import bootstrap
+from polyfloor.services import repository as repo
 
 
 @pytest.fixture

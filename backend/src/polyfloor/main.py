@@ -7,10 +7,9 @@ runs the SQLite WAL database on startup.
 
 from __future__ import annotations
 
-import json
 import uuid
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 import structlog
@@ -36,10 +35,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("polyfloor.db_initialized", url=settings.database_url)
     except Exception as exc:  # pragma: no cover
         logger.error("polyfloor.db_init_failed", error=str(exc))
-    try:
+    with suppress(Exception):
         get_engine()
-    except Exception:  # pragma: no cover
-        pass
     yield
     await close_engine()
     logger.info("polyfloor.stopped")

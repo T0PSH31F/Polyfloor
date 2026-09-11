@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from polyfloor.services.model_router import ModelRouterService, classify_tier, _mock_catalog
+from polyfloor.services.model_router import ModelRouterService, _mock_catalog, classify_tier
 
 
 def test_classify_tier_reasoning():

@@ -1,5 +1,8 @@
 # Python
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 *.sqlite
 __pycache__/
 *.py[cod]

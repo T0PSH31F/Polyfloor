@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from polyfloor.db.models import CompanyContext
-from polyfloor.services import bootstrap, repository as repo
-from polyfloor.services import hr
+from polyfloor.services import bootstrap, hr
+from polyfloor.services import repository as repo
 
 
 async def test_lead_request_creates_pending_approval(test_session):

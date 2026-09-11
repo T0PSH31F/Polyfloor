@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import company_context
 from ..db import get_session
 from ..db.models import CompanyContext
 from .companies import dispatch_action
@@ -42,10 +41,10 @@ async def post_action(
         await session.commit()
         return {"ok": True, "result": result}
     except LookupError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     except PermissionError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except ValueError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     except KeyError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"missing field: {exc}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"missing field: {exc}") from exc
