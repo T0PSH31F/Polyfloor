@@ -69,6 +69,12 @@
           default = pkgs.callPackage ./pkgs/default.nix {
             polyfloor-backend = self'.packages.backend;
           };
+          # Full bundle: backend serving the built SPA. `nix run .#polyfloor-full`
+          # serves the complete UI on :8001.
+          polyfloor-full = pkgs.callPackage ./pkgs/default.nix {
+            polyfloor-backend = self'.packages.backend;
+            polyfloor-frontend = self'.packages.frontend;
+          };
         };
 
         devShells.default = pkgs.mkShell {
