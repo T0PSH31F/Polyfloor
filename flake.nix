@@ -96,9 +96,12 @@
           '';
         };
 
+        # NOTE: `frontend` is intentionally excluded from checks — its
+        # buildNpmPackage npmDepsHash must be populated first (see
+        # pkgs/frontend.nix). `nix flake check` builds checks, so we only list
+        # derivations that build from source without a network fetch.
         checks = {
           backend = self'.packages.backend;
-          frontend = self'.packages.frontend;
           default = self'.packages.default;
         };
       };

@@ -5,6 +5,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 
@@ -19,6 +20,7 @@ in
 
     package = mkOption {
       type = types.package;
+      default = pkgs.callPackage ../../pkgs/backend.nix { };
       description = "The Polyfloor package to run (backend + optional frontend).";
     };
 

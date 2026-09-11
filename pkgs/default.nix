@@ -18,9 +18,9 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p $out/bin
-    makeWrapper ${polyfloor-backend}/bin/polyfloor $out/bin/polyfloor \
-      --set-default POLYFLOOR_HOST 127.0.0.1 \
-      --set-default POLYFLOOR_PORT 8080
+    # config.py defaults to 127.0.0.1:8001; do not override here so `nix run`
+    # matches the documented port. Set POLYFLOOR_STATIC_DIR to serve the SPA.
+    makeWrapper ${polyfloor-backend}/bin/polyfloor $out/bin/polyfloor
     runHook postInstall
   '';
 

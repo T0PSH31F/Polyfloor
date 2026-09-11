@@ -88,7 +88,7 @@ nix profile install github:T0PSH31F/Polyfloor
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `enable` | bool | `false` | Enable the Polyfloor systemd service. |
-| `package` | package | *(required)* | The Polyfloor package to run (use `inputs.polyfloor.packages.${system}.default`). |
+| `package` | package | *(built from source)* | The Polyfloor package to run. Defaults to the flake's backend; override with `inputs.polyfloor.packages.${system}.default` to bundle the frontend. |
 | `host` | str | `127.0.0.1` | Bind address. Loopback by default; put a reverse proxy in front for remote access. |
 | `port` | port | `8080` | Backend HTTP port. (`nix run` uses `8001`.) |
 | `dataDir` | path | `/var/lib/polyfloor` | Persistent state root; per-company workspaces live under `companies/<company_id>/`. |
